@@ -6,10 +6,10 @@ This project will explore the answer to the question above. Kerbside sort recycl
 
 ## Getting started
 ### Data
--   [Local Authority Districts (April 2023) Names and Codes in the UK](https://geoportal.statistics.gov.uk/datasets/ons::local-authority-districts-april-2023-names-and-codes-in-the-united-kingdom/explore) (Source: [ONS Open Geography Portal](https://geoportal.statistics.gov.uk))
--   [Local Authority District to Country (April 2023) lookup in the UK](https://geoportal.statistics.gov.uk/datasets/ons::local-authority-district-to-country-april-2023-lookup-in-the-united-kingdom/explore) (Source: [ONS Open Geography Portal](https://geoportal.statistics.gov.uk))
--   [Local Authority District to Region (December 2022) Lookup in England](https://geoportal.statistics.gov.uk/datasets/ons::local-authority-district-to-region-december-2022-lookup-in-england/explore) (Source: [ONS Open Geography Portal](https://geoportal.statistics.gov.uk))
--   [Local Authority Districts (May 2023) Boundaries UK BFE](https://geoportal.statistics.gov.uk/datasets/ons::local-authority-districts-may-2023-boundaries-uk-bfe/explore?location=54.880559%2C-0.453057%2C6.00) (Source: [ONS Open Geography Portal](https://geoportal.statistics.gov.uk))
+-   [Local Authority Districts (Dec 2021) Names and Codes in the UK](https://geoportal.statistics.gov.uk/documents/local-authority-districts-december-2021-names-and-codes-in-the-united-kingdom-1/about) (Source: [ONS Open Geography Portal](https://geoportal.statistics.gov.uk))
+-   [Local Authority District to Combined Authority (December 2021) Lookup in England v2](https://geoportal.statistics.gov.uk/documents/local-authority-district-to-combined-authority-december-2021-lookup-in-england-v2-1/about) (Source: [ONS Open Geography Portal](https://geoportal.statistics.gov.uk))
+-   [Local Authority District to Country (April 2021) lookup in the UK](https://geoportal.statistics.gov.uk/datasets/ons::local-authority-district-to-country-april-2021-lookup-in-the-united-kingdom-1/explore) (Source: [ONS Open Geography Portal](https://geoportal.statistics.gov.uk))
+-   [Local Authority District to Region (April 2021) Lookup in England](https://geoportal.statistics.gov.uk/datasets/ons::local-authority-district-to-region-april-2021-lookup-in-england-1/explore) (Source: [ONS Open Geography Portal](https://geoportal.statistics.gov.uk))
 -   [Mid-2021 edition Estimates of the population for the UK, England, Wales, Scotland and Northern Ireland](https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/populationestimatesforukenglandandwalesscotlandandnorthernireland) (Source: [ONS](https://www.ons.gov.uk))
 -   [Local authority collected waste management - annual results](https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/1144270/LA_and_Regional_Spreadsheet_202122.xlsx) (Source: [DEFRA WasteDataFlow](https://www.wastedataflow.org))
 
