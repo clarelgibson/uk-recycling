@@ -85,41 +85,41 @@ sys_cln <- sys_src %>%
          bins_verified = if_else(!is.na(bins), "Y", "N"))
 
 # > Survey =====================================================================
-# srv_cln <- srv_src %>% 
-#   clean_names() %>% 
-#   # shorten names
-#   rename(local_authority = 2,
-#          bin_type = 3,
-#          bin_count = 4,
-#          source_url = 5,
-#          comments = 6) %>% 
-#   # add LAD code
-#   left_join(select(lad_cln,
-#                    lad21cd,
-#                    local_authority)) %>% 
-#   # fix column types
-#   mutate(bin_count = as.numeric(bin_count)) %>% 
-#   # remove empty/invalid rows
-#   filter(!is.na(bin_count),
-#          !is.na(local_authority)) %>% 
-#   # select columns
-#   select(timestamp,
-#          lad21cd,
-#          bin_type,
-#          bin_count,
-#          source_url,
-#          comments) %>% 
-#   # recode bin type values
-#   mutate(bin_type = case_when(
-#     grepl("communal", bin_type) ~ "Communal",
-#     grepl("household", bin_type) ~ "Individual",
-#     TRUE ~ "Not reported"
-#   ))
+srv_cln <- srv_src %>%
+  clean_names() %>%
+  # shorten names
+  rename(local_authority = 2,
+         bin_type = 3,
+         bin_count = 4,
+         source_url = 5,
+         comments = 6) %>%
+  # add LAD code
+  left_join(select(lad_cln,
+                   lad21cd,
+                   local_authority)) %>%
+  # fix column types
+  mutate(bin_count = as.numeric(bin_count)) %>%
+  # remove empty/invalid rows
+  filter(!is.na(bin_count),
+         !is.na(local_authority)) %>%
+  # select columns
+  select(timestamp,
+         lad21cd,
+         bin_type,
+         bin_count,
+         source_url,
+         comments) %>%
+  # recode bin type values
+  mutate(bin_type = case_when(
+    grepl("communal", bin_type) ~ "Communal",
+    grepl("household", bin_type) ~ "Individual",
+    TRUE ~ "Not reported"
+  ))
 
 # Build a df to count the number of survey responses by LAD
-# srv_count <- srv_cln %>% 
-#   count(lad21cd,
-#         name = "survey_responses")
+srv_count <- srv_cln %>%
+  count(lad21cd,
+        name = "survey_responses")
 
 # > Population =================================================================
 pop_cln <- pop_src %>%

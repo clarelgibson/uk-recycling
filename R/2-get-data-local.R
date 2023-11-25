@@ -45,11 +45,11 @@ sys_file <- "systems-by-lad-2021.csv"
 sys_src <- read_csv(paste0(folder, sys_file))
 
 # > Survey =====================================================================
-#srv_file <- drive_ls("~/uk-recycling/") %>% 
-#  filter(name == "system-by-lad-survey") %>% 
-#  pull(id)
+srv_file <- drive_ls("~/uk-recycling/") %>%
+  filter(name == "system-by-lad-survey") %>%
+  pull(id)
 
-#srv_src <- read_sheet(srv_file)
+srv_src <- read_sheet(srv_file)
 
 # > Population =================================================================
 pop_file <- "population-by-lad-2021.xls" 
