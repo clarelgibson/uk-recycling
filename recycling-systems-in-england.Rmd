@@ -1,0 +1,148 @@
+---
+title: "Bin Burdens"
+subtitle: "A comparative analysis of recycling systems in England"
+author: "Clare Gibson"
+date: "29-11-2023"
+output:
+  html_document:
+    theme: yeti
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+# Knitr chunk options
+knitr::opts_chunk$set(
+	echo = FALSE,
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE
+)
+
+# Load data into R
+source(here::here("R/4-model-data.R"))
+```
+
+```{r banner, out.width = "100%", echo = FALSE, fig.align = "center"}
+knitr::include_graphics(here::here("img/recycling-paper-banner.png"))
+```
+
+# Introduction
+My parents live in St Helens, north-west England, and have to sort their dry recycling into four different containers (multi-stream). I live in Waverley, in the south-east and our recycling can all go into one bin (co-mingled). Sorting out the recycling and storing all of the different bins can be a burden, and mum and I wondered if it was worth all the effort?
+
+In this paper, I set out to answer the question: "Do local authorities with a multi-stream system of recycling achieve higher rates of recycling than those with a co-mingled system?"
+
+# Methodology
+We collected data from all 309 local authorities in England. For recycling rates, we used waste data sourced from [Defra](https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/1144270/LA_and_Regional_Spreadsheet_202122.xlsx) covering the financial year 2021/22. Recycling rates were calculated based on the total weight of household waste sent for recycling, composting or re-use divided by the total weight of household waste collected. Commercial and industrial waste was not included in this analysis.
+
+For recycling systems, we obtained data through a [Freedom of Information](https://www.gov.uk/government/collections/defra-freedom-of-information-environmental-information-releases-starting-january-2021#fois-2023) request to Defra for details of the type of household recycling system used by each local authority in England during the financial year 2021/22.
+
+# Data Overview
+Our dataset consists of recycling data from 309 local authorities in England for the financial year 2021/22, which was the latest available data at the time of this analysis. Table 1 shows the number of local authorities and summary statistics for each type of recycling collection system.
+
+```{r table-1}
+stats <- 
+  data %>% 
+  group_by(collection_type, collection_type_sort) %>% 
+  summarise(
+    n = n(),
+    collected_waste_per_person = round((sum(household_collected) / sum(population)) * 1000,1),
+    median_recycle_rate = scales::percent(median(household_recycle_rate), 0.1),
+    mean_recycle_rate = scales::percent(mean(household_recycle_rate), 0.1),
+    var_recycle_rate = var(household_recycle_rate),
+    sd_recycle_rate = sd(household_recycle_rate)
+  ) %>% 
+  arrange(collection_type_sort) %>% 
+  select(-collection_type_sort) %>% 
+  rename(
+    `Collection Type` = collection_type,
+    `Number of Local Authorities` = n,
+    `Total Waste Collected per Person (kg)` = collected_waste_per_person,
+    `Median Recycling Rate` = median_recycle_rate,
+    `Mean Recycling Rate` = mean_recycle_rate,
+    `Variance Recycling Rate` = var_recycle_rate,
+    `Standard Deviation Recycling Rate` = sd_recycle_rate
+  )
+
+stats %>% 
+  knitr::kable(
+    caption = "Table 1: Summary statistics by type of collection system",
+    align = "c"
+  )
+
+# store vectors of recycling rates for each system
+comingled <- data %>% 
+  filter(collection_type == "Co-Mingled") %>% 
+  select(household_recycle_rate) %>% 
+  pull()
+
+twostream <- data %>% 
+  filter(collection_type == "Two Stream") %>% 
+  select(household_recycle_rate) %>% 
+  pull()
+
+multi <- data %>% 
+  filter(collection_type == "Multi-Stream") %>% 
+  select(household_recycle_rate) %>% 
+  pull()
+```
+
+# Key Findings
+Local authorities employing multi-stream systems achieved an average recycling rate of `r scales::percent(mean(multi, na.rm = TRUE),0.1)`, ahead of two stream systems (`r scales::percent(mean(twostream, na.rm = TRUE),0.1)`) and co-mingled systems (`r scales::percent(mean(comingled, na.rm = TRUE),0.1)`).
+
+```{r chart-1}
+boxplot(comingled, twostream, multi)
+```
+
+```{r t-test}
+t.test(multi, comingled)
+```
+
+
+# Visualisations
+- Use charts, graphs, or tables to visually represent your findings. For example:
+  - Bar charts comparing overall recycling rates.
+  - Pie charts showing the composition of recycled materials in each system.
+  - Line charts illustrating trends over time if applicable.
+
+- Bar Chart: A bar chart comparing the overall recycling rates of kerbside sort and co-mingled systems.
+- Pie Chart: A pie chart illustrating the composition of recycled materials in each system.
+
+# Statistical Analysis
+
+- If you conducted statistical tests, briefly explain the methods used.
+- Present the results of any significance tests or confidence intervals.
+- Interpret the statistical findings in the context of your research question.
+
+"We conducted a t-test, which revealed a p-value of 0.02, indicating a statistically significant difference in recycling rates between the two systems."
+
+# Discussion
+
+- Interpret the findings and discuss their implications.
+- Consider possible reasons for any observed differences in recycling rates.
+- Compare your results with existing literature or similar studies if available.
+
+"The higher recycling rates in kerbside sort systems could be attributed to better sorting at the source, leading to cleaner recyclables. Additionally, community awareness and engagement may play a role."
+
+# Limitations
+
+- Acknowledge any limitations in your study, such as data constraints, assumptions, or potential biases.
+
+"It's important to note that our study relies on available data, and variations in local policies or population density might influence the results."
+
+# Recommendations
+
+- If applicable, provide recommendations based on your findings.
+- Consider suggesting areas for further research.
+
+"Based on our findings, we recommend local authorities consider the implementation of kerbside sort systems to improve recycling rates. However, further research is needed to explore the long-term sustainability and cost-effectiveness of such systems."
+
+# Conclusion
+
+- Summarize the key points of your presentation.
+- Restate your answer to the research question.
+
+"In conclusion, our analysis suggests that local authorities with kerbside sort systems tend to achieve higher recycling rates than those with co-mingled systems."
+
+# Reference
+- [Wrap LA Portal](https://laportal.wrap.org.uk/dashboard) contains data on recycling performance, recycling systems and kerbside costing for local authorities across the UK.

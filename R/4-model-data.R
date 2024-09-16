@@ -14,39 +14,37 @@ data <-
   lad_cln %>% 
   left_join(pop_cln,
             by = "lad21cd") %>% 
-  left_join(sys_cln,
+  left_join(foi_cln,
             by = "lad21cd") %>% 
   left_join(rec_cln,
             by = "wa21cd") %>% 
-  left_join(ctr_cln,
-            by = "lad21cd") %>% 
   left_join(rgn_cln,
             by = "lad21cd") %>% 
-  left_join(cau_cln,
+  left_join(shp_cln,
             by = "lad21cd") %>% 
-  #left_join(srv_count,
-  #          by = "lad21cd") %>% 
+  select(-geometry) %>% 
   replace_na(
     list(
       in_lad = "N",
       in_rec = "N",
-      in_sys = "N",
-      survey_responses = 0
+      in_foi = "N"
     )
+  ) %>% 
+  mutate(
+    household_collected_per_cap = household_collected / population
   )
 
 # EXPLORATORY ANALYSIS #########################################################
 x <- data %>% 
-  filter(!is.na(bins)) %>% 
   select(local_authority,
          waste_authority,
          population,
-         bins,
+         collection_type,
          household_collected,
          household_recycled,
          household_not_recycled,
          household_rejects) %>%
-  group_by(bins) %>% 
+  group_by(collection_type) %>% 
   summarise(sample_size = n(),
             household_collected = sum(household_collected),
             household_recycled = sum(household_recycled),

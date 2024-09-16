@@ -36,12 +36,14 @@ lad_cln <- lad_src %>%
     )
   )
 
-# > Countries ==================================================================
-ctr_cln <- ctr_src %>% 
+# > LAD Shapefile ==============================================================
+shp_cln <- shp_src %>% 
   clean_names() %>% 
-  select(-c(fid,
-            lad21nm),
-         country = ctry21nm)
+  select(
+    lad21cd,
+    bng_e:lat,
+    geometry
+  )
 
 # > Regions ====================================================================
 rgn_cln <- rgn_src %>% 
@@ -49,12 +51,6 @@ rgn_cln <- rgn_src %>%
   select(-c(fid,
             lad21nm),
          region = rgn21nm)
-
-# > Combined Authorities =======================================================
-cau_cln <- cau_src %>% 
-  clean_names() %>% 
-  select(-lad21nm,
-         combined_authority = cauth21nm)
   
 # > Recycling Rates ============================================================
 rec_cln <- rec_src %>% 
@@ -75,51 +71,34 @@ rec_cln <- rec_src %>%
          non_household_recycled = non_household_waste_sent_for_recycling_composting_reuse_tonnes,
          non_household_not_recycled = non_household_waste_not_sent_for_recycling_tonnes,
          non_household_rejects = non_household_estimated_rejects_tonnes) %>% 
-  mutate(in_rec = "Y")
+  mutate(
+    in_rec = "Y",
+    household_recycle_rate = household_recycled / household_collected
+  )
 
-# > Recycling Systems ==========================================================
-sys_cln <- sys_src %>% 
+# > FOI Recycling Systems ======================================================
+foi_cln <- foi_src %>% 
   clean_names() %>% 
-  select(-lad21nm) %>% 
-  mutate(in_sys = "Y",
-         bins_verified = if_else(!is.na(bins), "Y", "N"))
-
-# > Survey =====================================================================
-srv_cln <- srv_src %>%
-  clean_names() %>%
-  # shorten names
-  rename(local_authority = 2,
-         bin_type = 3,
-         bin_count = 4,
-         source_url = 5,
-         comments = 6) %>%
-  # add LAD code
-  left_join(select(lad_cln,
-                   lad21cd,
-                   local_authority)) %>%
-  # fix column types
-  mutate(bin_count = as.numeric(bin_count)) %>%
-  # remove empty/invalid rows
-  filter(!is.na(bin_count),
-         !is.na(local_authority)) %>%
-  # select columns
-  select(timestamp,
-         lad21cd,
-         bin_type,
-         bin_count,
-         source_url,
-         comments) %>%
-  # recode bin type values
-  mutate(bin_type = case_when(
-    grepl("communal", bin_type) ~ "Communal",
-    grepl("household", bin_type) ~ "Individual",
-    TRUE ~ "Not reported"
-  ))
-
-# Build a df to count the number of survey responses by LAD
-srv_count <- srv_cln %>%
-  count(lad21cd,
-        name = "survey_responses")
+  mutate(
+    collection_type = case_when(
+      collection_type_1 == "Two Stream Plus Textiles" ~ "Two Stream",
+      collection_type_1 == "Co-Mingled Plus Textiles" ~ "Co-Mingled",
+      TRUE ~ collection_type_1
+    ),
+    collection_type_sort = case_when(
+      collection_type == "Co-Mingled" ~ 1,
+      collection_type == "Two Stream" ~ 2,
+      collection_type == "Multi-Stream" ~ 3,
+      TRUE ~ 4
+    ),
+    in_foi = "Y"
+  ) %>% 
+  select(
+    lad21cd = ons_no,
+    collection_type,
+    collection_type_sort,
+    in_foi
+  )
 
 # > Population =================================================================
 pop_cln <- pop_src %>%

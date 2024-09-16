@@ -9,6 +9,7 @@ library(readr)
 library(readxl)
 library(googledrive)
 library(googlesheets4)
+library(sf)
 
 # > Scripts ====================================================================
 source(here("R/1-utils.R"))
@@ -21,13 +22,9 @@ folder <- here("data/src/")
 lad_file <- "lad21.xlsx"
 lad_src <- read_excel(paste0(folder, lad_file))
 
-# > LAD to Combined Authority ==================================================
-cau_file <- "lad21-to-cauth21.xlsx"
-cau_src <- read_excel(paste0(folder, cau_file))
-
-# > LAD to Country =============================================================
-ctr_file <- "lad21-to-country21.csv"
-ctr_src <- read_csv(paste0(folder, ctr_file))
+# > LAD Shapefile ==============================================================
+shp_file <- "lad21-shapefile"
+shp_src <- read_sf(paste0(folder, shp_file))
 
 # > LAD to Region ==============================================================
 rgn_file <- "lad21-to-region21.csv"
@@ -40,16 +37,12 @@ rec_src <- read_excel(
   range = "Table_1!A4:W2759"
 )
 
-# > Recycling Systems ==========================================================
-sys_file <- "systems-by-lad-2021.csv"
-sys_src <- read_csv(paste0(folder, sys_file))
-
-# > Survey =====================================================================
-srv_file <- drive_ls("~/uk-recycling/") %>%
-  filter(name == "system-by-lad-survey") %>%
-  pull(id)
-
-srv_src <- read_sheet(srv_file)
+# > FOI Recycling Systems ======================================================
+foi_file <- "EIR2023_21546.xlsx"
+foi_src <- read_excel(
+  paste0(folder, foi_file),
+  sheet = " Dry data 202122"
+)
 
 # > Population =================================================================
 pop_file <- "population-by-lad-2021.xls" 
