@@ -1,0 +1,257 @@
+---
+title: "A cluster analysis of recycling systems in England"
+author: "Clare Gibson"
+output:
+  html_document:
+    theme:
+      bg: "#ECF0F4"
+      fg: "#202C39"
+      primary: "#FF4F5C"
+      base_font:
+        google: "Figtree"
+      heading_font:
+        google: "Oswald"
+      code_font:
+        google: "Roboto Mono"
+    toc: true
+    toc_float: true
+    toc_depth: 2
+---
+
+# Setup
+## Packages
+Let's load the required packages for this analysis.
+```{r load-packages, message=FALSE, warning=FALSE}
+library(here)
+library(tidyverse)
+library(skimr)
+library(corrplot)
+library(tidytable)
+library(janitor)
+library(knitr)
+```
+
+## Collect the data
+Let's import the data and preview it.
+```{r import-data, message=FALSE, warning=FALSE}
+recycling <- 
+  read_csv(here("data/cln/data.csv"))
+
+glimpse(recycling)
+```
+
+The dataset contains a large number of character columns. Let's select only the columns we are interested in for this analysis.
+```{r select-columns}
+recycling <- 
+  recycling |> 
+  select(
+    lad21cd,
+    population,
+    collection_type,
+    household_collected,
+    household_recycled,
+    household_not_recycled,
+    household_rejects
+  )
+
+head(recycling)
+```
+
+Now we can check the summary statistics for each column and see if we have any missing values.
+
+```{r summary-stats}
+skim(recycling)
+```
+
+We can see that there are no missing values in any of the columns. We notice that `household_rejects` has a some negative values, which doesn't make sense. I propose to ignore that column for my analysis.
+
+# Exploratory Analysis
+## Correlations
+Let's run a correlation matrix to understand relationships between the variables.
+```{r correlation-matrix}
+recycling |> 
+  select(where(is.numeric)) |> 
+  cor(use = "pairwise.complete.obs") |> 
+  round(2) |> 
+  corrplot(method = "color", type = "upper")
+```
+
+There is a high correlation between `population` and `household_collected` meaning that as the population increases, so does the total amount of household waste that is collected. Same goes for `population` vs `household_not_recycled`. Both of these seem fairly obvious, so what if we look at the proportion of waste that is recycled instead of the amount? To do this we need to engineer a new feature into the dataset.
+
+```{r add-household_recycled_pct}
+recycling <- 
+  recycling |> 
+  mutate(
+    household_recycled_pct = round(household_recycled / household_collected, 3)
+  )
+
+recycling |> 
+  select(where(is.numeric)) |> 
+  cor(use = "pairwise.complete.obs") |> 
+  round(2) |> 
+  corrplot(method = "color", type = "upper")
+```
+
+Now we see a negative correlation between `population` and `household_recycled_pct`, meaning that as population increases, the proportion of waste that is recycled decreases. Larger populations are associated with lower recycling rates.
+
+Let's explore this relationship in a scatterplot.
+```{r scatter-population-recycle-rate}
+recycling |> 
+  ggplot(
+    aes(
+      x = household_recycled_pct,
+      y = population
+    )
+  ) +
+  geom_point() +
+  geom_smooth()
+```
+
+# Clustering
+## Normalization
+```{r normalize-data}
+scaled_recycling <- 
+  recycling |> 
+  select(where(is.numeric)) |> 
+  scale()
+```
+
+## Fit the model
+```{r fit-the-km-model}
+# Get the 2 columns of interest
+scaled_recycling_2col <- 
+  scaled_recycling[, c("population", "household_recycled_pct")]
+
+set.seed(123)
+km.out <- kmeans(scaled_recycling_2col, centers = 3, nstart = 20)
+km.out
+```
+
+## Optimize the model
+```{r optimize-model}
+# Decide how many clusters to look at
+n_clusters <- 10
+
+# Initialize total within sum of squares error: wss
+wss <- numeric(n_clusters)
+
+set.seed(123)
+
+# Look over 1 to n possible clusters
+for (i in 1:n_clusters) {
+  # Fit the model
+  km.out <- kmeans(scaled_recycling_2col, centers = i, nstart = 20)
+  # Save the within cluster sum of squares
+  wss[i] <- km.out$tot.withinss
+}
+
+# Produce a scree plot
+wss_df <- tibble(clusters = 1:n_clusters, wss = wss)
+
+scree_plot <- ggplot(wss_df, aes(x = clusters, y = wss, group = 1)) +
+  geom_point(size = 4) +
+  geom_line() +
+  scale_x_continuous(breaks = c(2, 4, 6, 8, 10)) +
+  xlab("Number of clusters")
+
+scree_plot
+```
+
+## Rebuild the model with optimized k
+```{r optimized-k}
+k <- 6
+
+set.seed(123)
+
+km.out <- kmeans(scaled_recycling_2col, centers = k, nstart = 20)
+```
+
+```{r scatterplot-with-clusters}
+recycling$cluster_id <- factor(km.out$cluster)
+
+ggplot(
+  recycling, 
+  aes(
+    x = population,
+    y = household_recycled_pct,
+    colour = cluster_id
+  )
+) +
+  geom_point() +
+  xlab("Population") +
+  ylab("Recycling Rate")
+```
+
+# Interpret the results
+First, we dummy code the only categorical feature, `collection_type` to allow us to get descriptive statistics for the values of this feature.
+```{r get-dummies}
+# Get dummies
+recycling <- 
+  recycling |> 
+  get_dummies(cols = collection_type) |> 
+  select(!collection_type) |> 
+  clean_names()
+
+# Summarise descriptive stats of full data
+recycling_stats <- 
+  recycling |> 
+  summarise(
+    global_comingled = mean(collection_type_co_mingled),
+    global_two_stream = mean(collection_type_two_stream),
+    global_multi_stream = mean(collection_type_multi_stream),
+    global_population = median(population),
+    global_household_collected = median(household_collected),
+    global_household_recycled = median(household_recycled),
+    global_household_rate = median(household_recycled_pct)
+  ) |> 
+  round(2)
+
+recycling_stats |> 
+  kable()
+```
+
+Next get the same descriptive stats but grouped by cluster.
+```{r stats-by-cluster}
+recycling_stats_by_cluster <- 
+  recycling |> 
+  group_by(cluster_id) |> 
+  summarise(
+    cluster_comingled = round(mean(collection_type_co_mingled), 2),
+    cluster_two_stream = round(mean(collection_type_two_stream), 2),
+    cluster_multi_stream = round(mean(collection_type_multi_stream), 2),
+    cluster_population = median(population),
+    cluster_household_collected = median(household_collected),
+    cluster_household_recycled = median(household_recycled),
+    cluster_household_rate = median(household_recycled_pct)
+  )
+
+recycling_stats_by_cluster |> 
+  kable()
+```
+
+Let's plot the differences from the population for each cluster.
+```{r plot-differences}
+recycling_cluster_profiles <- 
+  recycling_stats_by_cluster |> 
+  bind_cols(recycling_stats) |> 
+  # Calculate the difference from global for each cluster
+  mutate(
+    type_comingled = (cluster_comingled - global_comingled) / global_comingled,
+    type_two_stream = (cluster_two_stream - global_two_stream) / global_two_stream,
+    type_multi_stream = (cluster_multi_stream - global_multi_stream) / global_multi_stream,
+    population = (cluster_population - global_population) / global_population,
+    household_collected = (cluster_household_collected - global_household_collected) / global_household_collected,
+    household_recycled = (cluster_household_recycled - global_household_recycled) / global_household_recycled,
+    household_rate = (cluster_household_rate - global_household_rate) / global_household_rate
+  ) |> 
+  select(cluster_id, type_comingled, type_two_stream, type_multi_stream, population,
+         household_collected, household_recycled, household_rate) |> 
+  pivot_longer(cols = !cluster_id, names_to = "feature", values_to = "percent_difference") |> 
+  mutate(value_type = if_else(percent_difference >= 0, "positive", "negative"))
+
+recycling_cluster_profiles |> 
+  ggplot(aes(x = percent_difference, y = feature, fill = value_type)) +
+  geom_col() +
+  facet_wrap(~cluster_id, scales = "fixed")
+```
+
