@@ -17,6 +17,8 @@ This project will explore the answer to the question above. Kerbside sort recycl
 -   [Local authority collected waste management - annual results](https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/1144270/LA_and_Regional_Spreadsheet_202122.xlsx) (Save as `data/src/recycling-by-lad-2021.xlsx`)
 -   [Freedom of Information request for data on recycling systems by local authority for 2021](https://docs.google.com/spreadsheets/d/1M36p2m3Y59JvwW-a8sD-xXGADIkoe10N/edit?usp=share_link&ouid=110132729826719978887&rtpof=true&sd=true) (Save as `data/src/EIR2023_21546.xlsx`)
 
+The links above go to the original source location of the data. Should the links ever go stale, a copy of the same data can also be found on [Kaggle](https://www.kaggle.com/datasets/doublew/household-recycling-in-england-2021).
+
 ## Author
 
 -   [Clare Gibson](https://www.datatranslator.co.uk) - [clare\@datatranslator.co.uk](mailto:clare@datatranslator.co.uk)

@@ -38,5 +38,5 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
-# Data
-data/
+# Source Data (clean dataset can be stored in GitHub)
+data/src/
