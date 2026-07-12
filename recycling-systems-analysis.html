@@ -114,8 +114,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>This paper sets out to answer the question: <strong>Does the recycling system have a meaningful impact on recycling rates?</strong></p>
 <p>Local authorities in England can elect to use one of three collection types for household recycling:</p>
 <ul>
-<li><strong>Comingled:</strong> all non-organic recyclable material is put into a single bin by the householder</li>
-<li><strong>Two-stream:</strong> non-organic recyclable material must be sorted into two bins by the householder (e.g.&nbsp;one bin for glass and metal, and a second bin for paper, card and plastic)</li>
+<li><strong>Co-Mingled:</strong> all non-organic recyclable material is put into a single bin by the householder</li>
+<li><strong>Two Stream:</strong> non-organic recyclable material must be sorted into two bins by the householder (e.g.&nbsp;one bin for glass and metal, and a second bin for paper, card and plastic)</li>
 <li><strong>Multi-stream:</strong> householders sort their non-organic recyclable material into separate bins for each type of material</li>
 </ul>
 <p>Multi-stream systems place a higher burden on the householder, so this paper seeks to investigate whether this higher burden results in higher recycling rates.</p>
@@ -127,28 +127,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(skimr)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(corrplot)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidytable)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(janitor)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggridges)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="import-the-recycling-data" class="level2">
 <h2 class="anchored" data-anchor-id="import-the-recycling-data">Import the recycling data</h2>
-<p>The dataset includes information about household recycling for 309 local authorities (LA) in England in 2021. It contains the unique code and name of each LA, the population of the LA in 2021, the type of collection system in place in 2021, the amount of household waste collected and recycled in 2021 (in XXX units) and the household recycling rate.</p>
+<p>The dataset includes information about household recycling for 309 local authorities (LA) in England in 2021. It contains the unique code and name of each LA, the population of the LA in 2021, the type of collection system in place in 2021, the amount of household waste collected and recycled in 2021 (in tonnes) and the household recycling rate.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>recycling <span class="ot">&lt;-</span> </span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">"data/cln/data_recycling_system.csv"</span>))</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(recycling)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">"data/cln/data_recycling_system.csv"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># reorder factor levels to assist with plotting</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">collection_type =</span> <span class="fu">fct_reorder</span>(collection_type, household_recycle_rate)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(recycling)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Rows: 309
 Columns: 7
 $ lad21cd                &lt;chr&gt; "E06000001", "E06000002", "E06000003", "E060000…
 $ local_authority        &lt;chr&gt; "Hartlepool", "Middlesbrough", "Redcar and Clev…
 $ population             &lt;dbl&gt; 92571, 143734, 136616, 197030, 108222, 128577, …
-$ collection_type        &lt;chr&gt; "Co-Mingled", "Co-Mingled", "Two Stream", "Mult…
+$ collection_type        &lt;fct&gt; Co-Mingled, Co-Mingled, Two Stream, Multi-Strea…
 $ household_collected    &lt;dbl&gt; 39552, 64433, 57866, 88050, 46203, 59958, 94463…
 $ household_recycled     &lt;dbl&gt; 12893, 19169, 22077, 22592, 14968, 22137, 39753…
 $ household_recycle_rate &lt;dbl&gt; 0.3259759, 0.2975028, 0.3815194, 0.2565815, 0.3…</code></pre>
@@ -156,9 +158,53 @@ $ household_recycle_rate &lt;dbl&gt; 0.3259759, 0.2975028, 0.3815194, 0.2565815,
 </div>
 </section>
 </section>
-<section id="visualise-recycling-rates-by-system" class="level1">
-<h1>Visualise recycling rates by system</h1>
-<p>Before we run a significance test, let’s view the distributions of recycling rates by collection type, using a box plot.</p>
+<section id="visualise-the-distributions" class="level1">
+<h1>Visualise the distributions</h1>
+<p>Before we run a significance test, let’s view both the number of LA employing each type of collection system, and the distributions of recycling rates by collection type.</p>
+<section id="breakdown-of-collection-systems" class="level2">
+<h2 class="anchored" data-anchor-id="breakdown-of-collection-systems">Breakdown of collection systems</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fig_1 <span class="ot">&lt;-</span> </span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(recycling, <span class="fu">aes</span>(collection_type)) <span class="sc">+</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>() <span class="sc">+</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="at">stat =</span> <span class="st">"count"</span>, <span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">after_stat</span>(count)), <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Collection system"</span>,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Number of local authorities"</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>fig_1</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="recycling-systems-analysis_files/figure-html/bar-chart-system-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The bar chart shows that the group sizes are uneven. 157 (51%) LA use a co-mingled system, 112 (36%) use a two-stream system and 40 (13%) use a multi-stream system. This unevenness will become a factor in selecting the most appropriate test of statistical significance.</p>
+</section>
+<section id="distribution-of-recycling-rates-by-system" class="level2">
+<h2 class="anchored" data-anchor-id="distribution-of-recycling-rates-by-system">Distribution of recycling rates by system</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>fig_2 <span class="ot">&lt;-</span> </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(recycling, <span class="fu">aes</span>(<span class="at">x =</span> collection_type, <span class="at">y =</span> household_recycle_rate)) <span class="sc">+</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>(<span class="at">outlier.shape =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_jitter</span>(<span class="at">width =</span> <span class="fl">0.2</span>, <span class="at">alpha =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stat_summary</span>(<span class="at">fun =</span> mean, <span class="at">geom =</span> <span class="st">"point"</span>, <span class="at">shape =</span> <span class="dv">18</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Collection system"</span>, <span class="at">y =</span> <span class="st">"Household recycling rate"</span>) <span class="sc">+</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>percent)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>fig_2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="recycling-systems-analysis_files/figure-html/box-plot-recycle-rates-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
 </section>
 
 </main>
