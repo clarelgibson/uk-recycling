@@ -11,3 +11,4 @@ source(here("R/4-model-data.R"))
 
 # EXPORT #######################################################################
 fwrite(data, file = here("data/cln/data.csv"))
+fwrite(data_recycling_system, file = here("data/cln/data_recycling_system.csv"))

@@ -182,7 +182,7 @@ ggplot(
   ylab("Recycling Rate")
 ```
 
-# Interpret the results
+  # Interpret the results
 First, we dummy code the only categorical feature, `collection_type` to allow us to get descriptive statistics for the values of this feature.
 ```{r get-dummies}
 # Get dummies
@@ -255,3 +255,4 @@ recycling_cluster_profiles |>
   facet_wrap(~cluster_id, scales = "fixed")
 ```
 
+We can also build a contingency table of cluster against system type to compare the mean recycling rates per cluster.

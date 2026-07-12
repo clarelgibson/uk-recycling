@@ -1,0 +1,61 @@
+---
+title: "Comparison of Recycling Systems in England"
+subtitle: "Does the recycling system have a meaningful impact on recycling rates?"
+author: "Clare Gibson"
+---
+
+# Introduction
+
+This paper sets out to answer the question: **Does the recycling system have a meaningful impact on recycling rates?**
+
+Local authorities in England can elect to use one of three collection types for household recycling:
+
+- **Comingled:** all non-organic recyclable material is put into a single bin by the householder
+- **Two-stream:** non-organic recyclable material must be sorted into two bins by the householder (e.g. one bin for glass and metal, and a second bin for paper, card and plastic)
+- **Multi-stream:** householders sort their non-organic recyclable material into separate bins for each type of material
+
+Multi-stream systems place a higher burden on the householder, so this paper seeks to investigate whether this higher burden results in higher recycling rates.
+
+# Setup
+## Load required packages
+```{r load-packages, message=FALSE, warning=FALSE}
+library(here)
+library(tidyverse)
+library(ggplot2)
+library(ggridges)
+library(knitr)
+```
+
+## Import the recycling data
+The dataset includes information about household recycling for 309 local authorities (LA) in England in 2021. It contains the unique code and name of each LA, the population of the LA in 2021, the type of collection system in place in 2021, the amount of household waste collected and recycled in 2021 (in XXX units) and the household recycling rate.
+```{r import-data, message=FALSE, warning=FALSE}
+recycling <- 
+  read_csv(here("data/cln/data_recycling_system.csv"))
+
+glimpse(recycling)
+```
+
+# Visualise the distributions
+Before we run a significance test, let's view both the number of LA employing each type of collection system, and the distributions of recycling rates by collection type.
+
+## Breakdown of collection systems
+```{r bar-chart-system}
+fig_1 <- 
+  ggplot(recycling, aes(collection_type)) +
+  geom_bar()
+
+fig_1
+```
+
+The bar chart shows that the group sizes are uneven. 157 (51%) LA use a co-mingled system, 112 (36%) use a two-stream system and 40 (13%) use a multi-stream system. This unevenness will become a factor in selecting the most appropriate test of statistical significance.
+
+## Distribution of recycling rates by system
+```{r box-plot-recycle-rates}
+fig_2 <- 
+  ggplot(recycling, aes(x = collection_type, y = household_recycle_rate)) +
+  geom_boxplot() +
+  fct_reorder(collection_type, household_recycle_rate)
+
+fig_2
+```
+

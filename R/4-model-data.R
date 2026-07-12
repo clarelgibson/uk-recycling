@@ -34,21 +34,15 @@ data <-
     household_collected_per_cap = household_collected / population
   )
 
-# EXPLORATORY ANALYSIS #########################################################
-x <- data %>% 
-  select(local_authority,
-         waste_authority,
-         population,
-         collection_type,
-         household_collected,
-         household_recycled,
-         household_not_recycled,
-         household_rejects) %>%
-  group_by(collection_type) %>% 
-  summarise(sample_size = n(),
-            household_collected = sum(household_collected),
-            household_recycled = sum(household_recycled),
-            household_not_recycled = sum(household_not_recycled),
-            recycling_rate = household_recycled / household_collected,
-            rejects_per_capita = sum(household_rejects) / sum(population)) %>% 
-  ungroup()
+# RECYCLING SYSTEM ANALYSIS DATA ###############################################
+data_recycling_system <- 
+  data |> 
+  select(
+    lad21cd,
+    local_authority,
+    population,
+    collection_type,
+    household_collected,
+    household_recycled,
+    household_recycle_rate
+  )
