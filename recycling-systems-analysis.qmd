@@ -12,7 +12,7 @@ Local authorities in England can elect to use one of three collection types for 
 
 - **Co-Mingled:** all non-organic recyclable material is put into a single bin by the householder
 - **Two Stream:** non-organic recyclable material must be sorted into two bins by the householder (e.g. one bin for glass and metal, and a second bin for paper, card and plastic)
-- **Multi-stream:** householders sort their non-organic recyclable material into separate bins for each type of material
+- **Multi-Stream:** householders sort their non-organic recyclable material into separate bins for each type of material
 
 Multi-stream systems place a higher burden on the householder, so this paper seeks to investigate whether this higher burden results in higher recycling rates.
 
@@ -21,9 +21,9 @@ Multi-stream systems place a higher burden on the householder, so this paper see
 ```{r load-packages, message=FALSE, warning=FALSE}
 library(here)
 library(tidyverse)
-library(ggplot2)
-library(ggridges)
 library(knitr)
+library(moments)
+library(rstatix)
 ```
 
 ## Import the recycling data
@@ -47,13 +47,13 @@ Before we run a significance test, let's view both the number of LA employing ea
 ## Breakdown of collection systems
 ```{r bar-chart-system}
 fig_1 <- 
-  ggplot(recycling, aes(collection_type)) +
+  ggplot(recycling, aes(collection_type, fill = collection_type)) +
   geom_bar() +
   geom_text(stat = "count", aes(label = after_stat(count)), vjust = -0.5) +
   labs(
-    x = "Collection system",
-    y = "Number of local authorities"
-  )
+    title = "Breakdown of local authorities by recycling collection system"
+  ) +
+  scale_fill_brewer(palette = "Dark2", guide = "none")
 
 fig_1
 ```
@@ -61,15 +61,136 @@ fig_1
 The bar chart shows that the group sizes are uneven. 157 (51%) LA use a co-mingled system, 112 (36%) use a two-stream system and 40 (13%) use a multi-stream system. This unevenness will become a factor in selecting the most appropriate test of statistical significance.
 
 ## Distribution of recycling rates by system
-```{r box-plot-recycle-rates}
+```{r violin-plot-recycle-rates}
 fig_2 <- 
-  ggplot(recycling, aes(x = collection_type, y = household_recycle_rate)) +
-  geom_boxplot(outlier.shape = NA) +
-  geom_jitter(width = 0.2, alpha = 0.3) +
-  stat_summary(fun = mean, geom = "point", shape = 18, size = 3) +
-  labs(x = "Collection system", y = "Household recycling rate") +
-  scale_y_continuous(labels = scales::percent)
+  ggplot(recycling, aes(x = collection_type, y = household_recycle_rate, colour = collection_type)) +
+  labs(
+    x = "Collection type",
+    y = "Household recycling rate",
+    title = "Distribution of recycling rates by collection system",
+    caption = "Box shows median and interquartile range; diamond shows the mean"
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_color_brewer(palette = "Dark2", guide = "none")
 
-fig_2
+fig_2 +
+  geom_violin(aes(fill = collection_type), linewidth = 1, alpha = 0.5)+
+  geom_boxplot(outlier.alpha = 0, coef = 0,
+               colour = "grey40", width = 0.2) +
+  scale_fill_brewer(palette = "Dark2", guide = "none") +
+  coord_flip() +
+  stat_summary(fun = mean, geom = "point", shape = 18, size = 3)
 ```
 
+```{r summary-stats-recycle-rates}
+tbl_1 <- recycling |> 
+  group_by(collection_type) |> 
+  summarise(
+    mean = mean(household_recycle_rate, na.rm = TRUE),
+    median = median(household_recycle_rate, na.rm = TRUE),
+    sd = sd(household_recycle_rate, na.rm = TRUE),
+    skew = skewness(household_recycle_rate)
+  )
+
+tbl_1
+```
+
+From the distribution plot and the summary table, we can see that multi-stream collection systems achieved the highest man and median recycling rate in 2021, and co-mingled systems achieved the lowest rates. The skew number tells us that the distributions are not normal. Co-mingled systems show a positive skew, while two stream and multi-stream both show a negative skew.
+
+## Distribution of household waste collected
+
+Given that our measure of interest, `household_recycle_rate` is itself a calculation (`household_recycled`/`household_collected`) we should also check whether the distributions of the underlying components are normal or skewed.
+
+```{r violin-plot-household-collected}
+fig_3 <- 
+  ggplot(recycling, aes(x = collection_type, y = household_collected, colour = collection_type)) +
+  labs(
+    x = "Collection type",
+    y = "Household waste collected",
+    title = "Distribution of household waste collected by collection system",
+    caption = "Box shows median and interquartile range; diamond shows the mean"
+  ) +
+  scale_color_brewer(palette = "Dark2", guide = "none")
+
+fig_3 +
+  geom_violin(aes(fill = collection_type), linewidth = 1, alpha = 0.5)+
+  geom_boxplot(outlier.alpha = 0, coef = 0,
+               colour = "grey40", width = 0.2) +
+  scale_fill_brewer(palette = "Dark2", guide = "none") +
+  coord_flip() +
+  stat_summary(fun = mean, geom = "point", shape = 18, size = 3)
+```
+
+```{r summary-stats-household-collected}
+tbl_2 <- recycling |> 
+  group_by(collection_type) |> 
+  summarise(
+    mean = mean(household_collected, na.rm = TRUE),
+    median = median(household_collected, na.rm = TRUE),
+    sd = sd(household_collected, na.rm = TRUE),
+    skew = skewness(household_collected)
+  )
+
+tbl_2
+```
+
+Here, we see that the underlying data is much more heavily skewed than the resulting calculation of recycling rate. All three collection systems show positive skew, meaning that there is a long tail of local authorities collecting high volumes of waste.
+
+## Distribution of household waste recycled
+
+```{r violin-plot-household-recycled}
+fig_4 <- 
+  ggplot(recycling, aes(x = collection_type, y = household_recycled, colour = collection_type)) +
+  labs(
+    x = "Collection type",
+    y = "Household waste recycled",
+    title = "Distribution of household waste recycled by collection system",
+    caption = "Box shows median and interquartile range; diamond shows the mean"
+  ) +
+  scale_color_brewer(palette = "Dark2", guide = "none")
+
+fig_4 +
+  geom_violin(aes(fill = collection_type), linewidth = 1, alpha = 0.5)+
+  geom_boxplot(outlier.alpha = 0, coef = 0,
+               colour = "grey40", width = 0.2) +
+  scale_fill_brewer(palette = "Dark2", guide = "none") +
+  coord_flip() +
+  stat_summary(fun = mean, geom = "point", shape = 18, size = 3)
+```
+
+```{r summary-stats-household-recycled}
+tbl_3 <- recycling |> 
+  group_by(collection_type) |> 
+  summarise(
+    mean = mean(household_recycled, na.rm = TRUE),
+    median = median(household_recycled, na.rm = TRUE),
+    sd = sd(household_recycled, na.rm = TRUE),
+    skew = skewness(household_recycled)
+  )
+
+tbl_3
+```
+
+Again, we see that the underlying data is much more heavily skewed than the resulting calculation of recycling rate. All three collection systems show positive skew, meaning that there is a long tail of local authorities recycling high volumes of waste.
+
+# Test for significance
+
+The default statistical test would be a one-way ANOVA, which compares group means. But ANOVA assumes each group is roughly normally distributed with similar variance, and our groups are uneven (157 / 112 / 40) and somewhat skewed, as shown above. Instead, we will use the Kruskal-Wallis test: the non-parametric equivalent. It works on the ranks of the values instead of the raw values, so it makes no assumption about the shape of the distribution, and it handles unequal group sizes comfortably. It tests whether at least one group tends to sit higher than the others.
+
+```{r kruskal-wallis-test}
+# Run the KW test for recycling rate as explained by collection type
+kruskal.test(household_recycle_rate ~ collection_type, data = recycling)
+```
+
+The p-value is below 0.05, which indicates a significant effect. However, a p-value only tells us whether there is an effect, not how big it is. With 309 authorities, even a trivial difference can come out significant. Our question asks about a meaningful impact, so we need an effect size, which measures how much of the variation in recycling rates is explained by collection system.
+
+```{r kruskal-wallis-effect}
+recycling |> 
+  kruskal_effsize(household_recycle_rate ~ collection_type)
+```
+
+This test shows us that while collection type does have a real effect on recycling rates, the effect size is small.
+
+# Conclusion
+
+Using the 2021 recycling data for English local authorities, we have shown that collection systems that put higher burden on the householder to sort their waste into separate streams do achieve higher recycling rates. However, the effect of the collection system is small. Therefore, it would not be fair to conclude that the burden of effort on the householder is worth it. That being said, there are other reasons that a local authority may choose a multi-stream system over a co-mingled one. The lack of a Materials Recovery Facility, where co-mingled waste can be sorted by machine, may force certain LAs to opt for kerbside sort.
