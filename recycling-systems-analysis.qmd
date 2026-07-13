@@ -189,8 +189,23 @@ recycling |>
   kruskal_effsize(household_recycle_rate ~ collection_type)
 ```
 
-This test shows us that while collection type does have a real effect on recycling rates, the effect size is small.
+This test shows us that while collection type does have a real effect on recycling rates, the effect size is small. Finally, we can run a Dunn test to see which of the collection types show a significant difference in terms of recycling rates.
+
+```{r dunns-test}
+dunn <- recycling |> 
+  dunn_test(household_recycle_rate ~ collection_type,
+            p.adjust.method = "holm")
+
+dunn |> 
+  kable(digits = 3)
+```
 
 # Conclusion
 
-Using the 2021 recycling data for English local authorities, we have shown that collection systems that put higher burden on the householder to sort their waste into separate streams do achieve higher recycling rates. However, the effect of the collection system is small. Therefore, it would not be fair to conclude that the burden of effort on the householder is worth it. That being said, there are other reasons that a local authority may choose a multi-stream system over a co-mingled one. The lack of a Materials Recovery Facility, where co-mingled waste can be sorted by machine, may force certain LAs to opt for kerbside sort.
+Using the 2021 recycling data for English local authorities, we have shown that three different collection systems exist across the 309 local authorities: Co-Mingled, where all recyclable waste goes into a single container; Two Stream, where recyclable waste is sorted into two containers; and Multi-Stream, where recyclable waste must be sorted into at least three different containers. Co-Mingled systems are the most prevalent across England, with over half of local authorities employing this system. Two Stream systems represent a further 36% of local authorities and Multi-Stream systems are employed by just 13% of authorities.
+
+Given the uneven group sizes, we opted to use the the Kruskal-Wallis test to test for significance. With a p-value of <0.05, this test shows that at least one system differs from the other two to a statistically significant degree. Using Dunn's test, we were able ti identify an interesting result. Co-Mingled systems are significantly worse than multi-stream systems, but two-stream and multi-stream cannot be told apart.
+
+[FURTHER CONCLUSIONS HERE]
+
+That being said, there are other reasons that a local authority may choose a multi-stream system over a co-mingled one. The lack of a Materials Recovery Facility, where co-mingled waste can be sorted by machine, may force certain LAs to opt for kerbside sort.

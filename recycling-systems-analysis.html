@@ -362,11 +362,85 @@ Kruskal-Wallis chi-squared = 9.8269, df = 2, p-value = 0.007347</code></pre>
 1 household_recycle_rate   309  0.0256 eta2[H] small    </code></pre>
 </div>
 </div>
-<p>This test shows us that while collection type does have a real effect on recycling rates, the effect size is small.</p>
+<p>This test shows us that while collection type does have a real effect on recycling rates, the effect size is small. Finally, we can run a Dunn test to see which of the collection types show a significant difference in terms of recycling rates.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>dunn <span class="ot">&lt;-</span> recycling <span class="sc">|&gt;</span> </span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dunn_test</span>(household_recycle_rate <span class="sc">~</span> collection_type,</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">p.adjust.method =</span> <span class="st">"holm"</span>)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>dunn <span class="sc">|&gt;</span> </span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 12%">
+<col style="width: 14%">
+<col style="width: 4%">
+<col style="width: 4%">
+<col style="width: 11%">
+<col style="width: 6%">
+<col style="width: 6%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">.y.</th>
+<th style="text-align: left;">group1</th>
+<th style="text-align: left;">group2</th>
+<th style="text-align: right;">n1</th>
+<th style="text-align: right;">n2</th>
+<th style="text-align: right;">statistic</th>
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">p.adj</th>
+<th style="text-align: left;">p.adj.signif</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">household_recycle_rate</td>
+<td style="text-align: left;">Co-Mingled</td>
+<td style="text-align: left;">Two Stream</td>
+<td style="text-align: right;">157</td>
+<td style="text-align: right;">112</td>
+<td style="text-align: right;">2.233</td>
+<td style="text-align: right;">0.026</td>
+<td style="text-align: right;">0.051</td>
+<td style="text-align: left;">ns</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">household_recycle_rate</td>
+<td style="text-align: left;">Co-Mingled</td>
+<td style="text-align: left;">Multi-Stream</td>
+<td style="text-align: right;">157</td>
+<td style="text-align: right;">40</td>
+<td style="text-align: right;">2.754</td>
+<td style="text-align: right;">0.006</td>
+<td style="text-align: right;">0.018</td>
+<td style="text-align: left;">*</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">household_recycle_rate</td>
+<td style="text-align: left;">Two Stream</td>
+<td style="text-align: left;">Multi-Stream</td>
+<td style="text-align: right;">112</td>
+<td style="text-align: right;">40</td>
+<td style="text-align: right;">1.149</td>
+<td style="text-align: right;">0.251</td>
+<td style="text-align: right;">0.251</td>
+<td style="text-align: left;">ns</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </section>
 <section id="conclusion" class="level1">
 <h1>Conclusion</h1>
-<p>Using the 2021 recycling data for English local authorities, we have shown that collection systems that put higher burden on the householder to sort their waste into separate streams do achieve higher recycling rates. However, the effect of the collection system is small. Therefore, it would not be fair to conclude that the burden of effort on the householder is worth it. That being said, there are other reasons that a local authority may choose a multi-stream system over a co-mingled one. The lack of a Materials Recovery Facility, where co-mingled waste can be sorted by machine, may force certain LAs to opt for kerbside sort.</p>
+<p>Using the 2021 recycling data for English local authorities, we have shown that three different collection systems exist across the 309 local authorities: Co-Mingled, where all recyclable waste goes into a single container; Two Stream, where recyclable waste is sorted into two containers; and Multi-Stream, where recyclable waste must be sorted into at least three different containers. Co-Mingled systems are the most prevalent across England, with over half of local authorities employing this system. Two Stream systems represent a further 36% of local authorities and Multi-Stream systems are employed by just 13% of authorities.</p>
+<p>Given the uneven group sizes, we opted to use the the Kruskal-Wallis test to test for significance. With a p-value of &lt;0.05, this test shows that at least one system differs from the other two to a statistically significant degree. Using Dunn’s test, we were able ti identify an interesting result. Co-Mingled systems are significantly worse than multi-stream systems, but two-stream and multi-stream cannot be told apart.</p>
+<p>[FURTHER CONCLUSIONS HERE]</p>
+<p>That being said, there are other reasons that a local authority may choose a multi-stream system over a co-mingled one. The lack of a Materials Recovery Facility, where co-mingled waste can be sorted by machine, may force certain LAs to opt for kerbside sort.</p>
 </section>
 
 </main>
