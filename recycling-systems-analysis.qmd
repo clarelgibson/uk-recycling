@@ -23,8 +23,6 @@ execute:
   message: false
 ---
 
-![](img/dt-logo.svg){.dt-logo fig-alt="Data Translator logo"}
-
 # Introduction
 
 This paper sets out to answer the question: **Does the collection system have a meaningful impact on recycling rate?**

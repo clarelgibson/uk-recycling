@@ -48,3 +48,14 @@ img.dt-logo {
   width: 75px;
   margin-bottom: 1.5rem;
 }
+
+#quarto-sidebar-toc-left::before {
+  content: "";
+  display: block;
+  height: 35px;
+  margin: 0.5rem 0 1.5rem 0;
+  background-image: url("img/dt-logo.svg");
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: contain;
+}
