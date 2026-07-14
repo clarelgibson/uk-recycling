@@ -16,7 +16,7 @@ Local authorities in England can elect to use one of three collection systems fo
 
 Multi-Stream systems place a higher burden on the householder, so this paper asks whether that higher burden is associated with higher recycling rates, and whether any difference is large enough to matter in practice.
 
-The word "meaningful" in the research question is important. A difference in recycling rates can be statistically detectable without being practically meaningful, particularly with a sample of 309 authorities. This analysis therefore reports not only whether the systems differ, but by how much, and with how much confidence.
+The word "meaningful" in the research question is important. A difference in recycling rates can be statistically detectable without being practically meaningful. This analysis therefore reports not only whether the systems differ, but by how much, and with how much confidence.
 
 A note on causation: local authorities choose their own collection systems. Therefore, this is observational data and not a randomised experiment. Throughout this paper the language is deliberately one of association rather than cause.
 
@@ -172,7 +172,7 @@ fig_3
 ```{r}
 #| label: tbl-household-collected
 #| tbl-cap: "Summary statistics for amount of household waste collected (tonnes) by collection system"
-#| 
+
 summarise_distribution(recycling, household_collected) |> kable(digits = 3)
 ```
 
@@ -227,7 +227,7 @@ eff <- recycling |> kruskal_effsize(household_recycle_rate ~ collection_type)
 eff |> kable(digits = 3)
 ```
 
-Eta-squared is `r round(eff$effsize, 3)`, meaning collection system accounts for under `r round(eff$effsize * 100, 1)`% of the variation in recycling rates between local authorities. By the conventional thresholds (0.01 small, 0.06 medium, 0.14 large) this is a small effect. This means that the collection system is not the biggest contributor to the recycling rate.
+Eta-squared is `r round(eff$effsize, 3)`, meaning collection system accounts for `r round(eff$effsize * 100, 1)`% of the variation in recycling rates between local authorities. By the conventional thresholds (0.01 small, 0.06 medium, 0.14 large) this is a small effect. This means that the collection system is not the biggest contributor to the recycling rate.
 
 ## Dunn's test
 
@@ -256,6 +256,7 @@ dunn <- recycling |>
 # Function to pull out data from Dunn test
 dunn_gap  <- function(g1, g2) dunn$median_gap_pp[dunn$group1 == g1 & dunn$group2 == g2]
 dunn_padj <- function(g1, g2) dunn$p.adj[dunn$group1 == g1 & dunn$group2 == g2]
+dunn_p <- function(g1, g2) dunn$p[dunn$group1 == g1 & dunn$group2 == g2]
 
 dunn |> kable(digits = 3)
 ```
@@ -329,11 +330,11 @@ The regression analysis showed two results.
 
 Firstly, the system effect was robust to authority size. The collection type coefficients barely changed when population was factored in: Two Stream moved from `r pp(get_term(tidy_1, "collection_typeTwo Stream"))`pp to `r pp(get_term(tidy_2, "collection_typeTwo Stream"))`pp, and Multi-Stream from `r pp(get_term(tidy_1, "collection_typeMulti-Stream"))`pp to `r pp(get_term(tidy_2, "collection_typeMulti-Stream"))`pp. If size had been confounding the comparison, these would have reduced materially. The association between collection system and recycling rate is not an artefact of larger or smaller councils favouring particular systems.
 
-Secondly, larger authorities recycle less. The coefficient on `log(population)` is `r round(get_term(tidy_2, "log(population)"), 3)` (p = `r round(get_term(tidy_2, "log(population)", "p.value"), 3)`), which corresponds to a fall of roughly `r abs(pp(get_term(tidy_2, "log(population)") * log(2)))`pp in the recycling rate for each doubling of population. This is a modest but real association, and it is independent of the collection system in use.
+Secondly, larger authorities recycle less. The coefficient on `log(population)` is `r round(get_term(tidy_2, "log(population)"), 3)` (*p* = `r round(get_term(tidy_2, "log(population)", "p.value"), 3)`), which corresponds to a fall of roughly `r abs(pp(get_term(tidy_2, "log(population)") * log(2)))`pp in the recycling rate for each doubling of population. This is a modest but real association, and it is independent of the collection system in use.
 
-The confidence intervals are more informative than the *p*-values. Relative to Co-Mingled, Two Stream is associated with an increase of `r pp(get_term(tidy_2, "collection_typeTwo Stream"))`pp (95% CI: `r pp(get_term(tidy_2, "collection_typeTwo Stream", "conf.low"))` to `r pp(get_term(tidy_2, "collection_typeTwo Stream", "conf.high"))`) and Multi-Stream with an increase of `r pp(get_term(tidy_2, "collection_typeMulti-Stream"))`pp (95% CI: `r pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.low"))` to `r pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.high"))`). Both intervals exclude zero, so both effects are likely real, but both are wide. The Multi-Stream interval spans everything from a barely noticeable 1pp to a substantial 8pp. A fair interpretation of this is that a real effect exists and its likely size is modest, but this dataset cannot pin it down precisely.
+The confidence intervals are more informative than the *p*-values. Relative to Co-Mingled, Two Stream is associated with an increase of `r pp(get_term(tidy_2, "collection_typeTwo Stream"))`pp (95% CI: `r pp(get_term(tidy_2, "collection_typeTwo Stream", "conf.low"))` to `r pp(get_term(tidy_2, "collection_typeTwo Stream", "conf.high"))`) and Multi-Stream with an increase of `r pp(get_term(tidy_2, "collection_typeMulti-Stream"))`pp (95% CI: `r pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.low"))`pp to `r pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.high"))`pp). Both intervals exclude zero, so both effects are likely real, but both are wide. The Multi-Stream interval spans everything from a barely noticeable `r round(pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.low")))`pp to a substantial `r round(pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.high")))`pp. A fair interpretation of this is that a real effect exists and its likely size is modest, but this dataset cannot pin it down precisely.
 
-There is one apparent discrepancy that we should explain. In the regression, Two Stream differs significantly from Co-Mingled (*p* = `r round(get_term(tidy_2, "collection_typeTwo Stream", "p.value"),3)`), whereas Dunn's test found the same comparison borderline (`p.adj` = `r round(dunn_padj("Co-Mingled","Two Stream"),3)`). These are not contradictory. Dunn's raw *p*-value for that pair was `r round(dunn$p.adj[dunn$group1 == "Co-Mingled" & dunn$group2 == "Two Stream"],3)`, and the Holm correction for three comparisons roughly doubled it. The regression applies no such correction. The two results agree on the substance: there is a difference of around 3 to 4pp, and the evidence for it is real but not overwhelming.
+There is one apparent discrepancy that we should explain. In the regression, Two Stream differs significantly from Co-Mingled (*p* = `r round(get_term(tidy_2, "collection_typeTwo Stream", "p.value"),3)`), whereas Dunn's test found the same comparison borderline (`p.adj` = `r round(dunn_padj("Co-Mingled","Two Stream"),3)`). These are not contradictory. Dunn's raw *p*-value for that pair was `r round(dunn_p("Co-Mingled","Two Stream"),3)`, and the Holm correction for three comparisons roughly doubled it. The regression applies no such correction. The two results agree on the substance: there is a difference of around 3 to 4pp, and the evidence for it is real but not overwhelming.
 
 Finally, the model explains very little. The R-squared is `r round(glance_2$r.squared, 3)`. This means that `r round((1 - glance_2$r.squared) * 100)`% of the variation in recycling rates between English local authorities lies outside collection system and population entirely.
 
@@ -348,7 +349,7 @@ academic.
 
 **But the effect appears to be a step, not a ladder.** The evidence does not support the intuition that asking householders to sort into ever more streams yields ever higher rates. Two Stream and Multi-Stream authorities are statistically indistinguishable from one another, with a median gap of `r round(dunn_gap("Two Stream","Multi-Stream"),1)`pp. What appears to matter is whether households separate their recycling at all, not how finely they separate it. If this interpretation is correct, it has a clear practical implication: the additional burden that Multi-Stream places on householders, relative to Two Stream, gives no detectable improvement. This is the most interesting finding in the analysis, and it is also the one held most tentatively, resting as it does on only `r n_sys("Multi-Stream")` Multi-Stream authorities.
 
-**And most of what drives recycling rates lies elsewhere.** Collection system explains under `r round(eff$effsize * 100, 1)`% of the variation between authorities. Controlling for population raises the figure only to `r round(glance_2$r.squared * 100, 1)`%. The other `r 100-round(glance_2$r.squared * 100, 1)`% belongs to factors this analysis cannot see. A local authority hoping to transform its recycling performance by changing its bin system alone would, on this evidence, be disappointed. The system is one lever among many, and not the largest.
+**And most of what drives recycling rates lies elsewhere.** Collection system alone explains `r round(glance_1$r.squared * 100, 1)`% of the variation between authorities. Adding population raises this only to `r round(glance_2$r.squared * 100, 1)`%. The other `r 100-round(glance_2$r.squared * 100, 1)`% belongs to factors this analysis cannot see. A local authority hoping to transform its recycling performance by changing its bin system alone would, on this evidence, be disappointed. The system is one lever among many, and not the largest.
 
 There are also sound reasons why an authority might choose a system irrespective of its effect on rates. Without access to a Materials Recovery Facility, where co-mingled waste can be mechanically sorted, a council may have little practical alternative to kerbside sorting. The choice of system is constrained by infrastructure, cost and geography, not made freely on the basis of expected recycling rate.
 
