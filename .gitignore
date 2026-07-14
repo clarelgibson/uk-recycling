@@ -40,3 +40,9 @@ vignettes/*.pdf
 
 # Source Data (clean dataset can be stored in GitHub)
 data/src/
+
+# GH-Pages
+/index.html
+/recycling-systems-analysis.html
+/recycling-systems-analysis_files/
+/.quarto/
