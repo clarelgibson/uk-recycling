@@ -138,7 +138,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="import-the-recycling-data" class="level2">
 <h2 class="anchored" data-anchor-id="import-the-recycling-data">Import the recycling data</h2>
-<p>The dataset includes information about household recycling for 309 local authorities (LA) in England in 2021. It contains the unique code and name of each LA, the population of the LA in 2021, the type of collection system in place in 2021, the amount of household waste collected and recycled in 2021 (in tonnes) and the household recycling rate.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>recycling <span class="ot">&lt;-</span> </span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">"data/cln/data_recycling_system.csv"</span>)) <span class="sc">|&gt;</span> </span>
@@ -160,12 +159,14 @@ $ household_recycled     &lt;dbl&gt; 12893, 19169, 22077, 22592, 14968, 22137, 3
 $ household_recycle_rate &lt;dbl&gt; 0.3259759, 0.2975028, 0.3815194, 0.2565815, 0.3…</code></pre>
 </div>
 </div>
+<p>The dataset includes information about household recycling for 309 local authorities in England in 2021. It contains the unique code and name of each authority, the population of the authority in 2021, the type of collection system in place in 2021, the amount of household waste collected and recycled in 2021 (in tonnes) and the household recycling rate.</p>
 </section>
-<section id="setup-the-code-for-plotting-and-summarising" class="level2">
-<h2 class="anchored" data-anchor-id="setup-the-code-for-plotting-and-summarising">Setup the code for plotting and summarising</h2>
+<section id="helper-code" class="level2">
+<h2 class="anchored" data-anchor-id="helper-code">Helper code</h2>
+<p>The chunk below contains code to support consistent plotting.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># We'll be creating a number of similar plots, so we can wrap the code into a function</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>plot_distribution <span class="ot">&lt;-</span> <span class="cf">function</span>(data, yvar, ylab, title, <span class="at">percent =</span> <span class="cn">FALSE</span>) {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>plot_distribution <span class="ot">&lt;-</span> <span class="cf">function</span>(data, yvar, ylab, <span class="at">percent =</span> <span class="cn">FALSE</span>) {</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(data, <span class="fu">aes</span>(<span class="at">x =</span> collection_type, <span class="at">y =</span> {{ yvar }})) <span class="sc">+</span></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_violin</span>(<span class="fu">aes</span>(<span class="at">fill =</span> collection_type, <span class="at">colour =</span> collection_type),</span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>                <span class="at">linewidth =</span> <span class="dv">1</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
@@ -177,83 +178,109 @@ $ household_recycle_rate &lt;dbl&gt; 0.3259759, 0.2975028, 0.3815194, 0.2565815,
 <span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_brewer</span>(<span class="at">palette =</span> <span class="st">"Dark2"</span>, <span class="at">guide =</span> <span class="st">"none"</span>) <span class="sc">+</span></span>
 <span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(</span>
 <span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">x =</span> <span class="st">"Collection system"</span>,</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> ylab,</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> title,</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">"Box shows median and interquartile range; diamond shows the mean"</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> ylab</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (percent) p <span class="ot">&lt;-</span> p <span class="sc">+</span> <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>percent)</span>
 <span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (percent) p <span class="ot">&lt;-</span> p <span class="sc">+</span> <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>percent)</span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  p</span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>summarise_distribution <span class="ot">&lt;-</span> <span class="cf">function</span>(data, yvar) {</span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>  data <span class="sc">|&gt;</span></span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(collection_type) <span class="sc">|&gt;</span></span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>      <span class="at">n      =</span> <span class="fu">n</span>(),</span>
-<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>      <span class="at">mean   =</span> <span class="fu">mean</span>({{ yvar }}, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>      <span class="at">median =</span> <span class="fu">median</span>({{ yvar }}, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>      <span class="at">sd     =</span> <span class="fu">sd</span>({{ yvar }}, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>      <span class="at">skew   =</span> <span class="fu">skewness</span>({{ yvar }})</span>
-<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  p</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>summarise_distribution <span class="ot">&lt;-</span> <span class="cf">function</span>(data, yvar) {</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>  data <span class="sc">|&gt;</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(collection_type) <span class="sc">|&gt;</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>      <span class="at">n      =</span> <span class="fu">n</span>(),</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>      <span class="at">mean   =</span> <span class="fu">mean</span>({{ yvar }}, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>      <span class="at">median =</span> <span class="fu">median</span>({{ yvar }}, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>      <span class="at">sd     =</span> <span class="fu">sd</span>({{ yvar }}, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>      <span class="at">skew   =</span> <span class="fu">skewness</span>({{ yvar }})</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The chunk below contains code to support reporting of results.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert a proportion to percentage points</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>pp <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">digits =</span> <span class="dv">1</span>) <span class="fu">round</span>(x <span class="sc">*</span> <span class="dv">100</span>, digits)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Count and share of LAs using a given collection system</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>n_sys   <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sum</span>(recycling<span class="sc">$</span>collection_type <span class="sc">==</span> x)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>pct_sys <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">round</span>(<span class="fu">mean</span>(recycling<span class="sc">$</span>collection_type <span class="sc">==</span> x) <span class="sc">*</span> <span class="dv">100</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Pull a single value out of a broom tidy tibble by term name</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>get_term <span class="ot">&lt;-</span> <span class="cf">function</span>(tbl, term_name, <span class="at">col =</span> <span class="st">"estimate"</span>) {</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  tbl[[col]][tbl<span class="sc">$</span>term <span class="sc">==</span> term_name]</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 </section>
 <section id="visualise-the-distributions" class="level1">
 <h1>Visualise the distributions</h1>
-<p>Before we run a significance test, let’s view both the number of LA employing each type of collection system, and the distributions of recycling rates by collection type.</p>
+<p>Before we run a significance test, let’s view both the number of local authorities employing each type of collection system (see <a href="#fig-collection-systems" class="quarto-xref">Figure&nbsp;1</a>), and the distributions of recycling rates by collection type (see <a href="#fig-recycle-rate" class="quarto-xref">Figure&nbsp;2</a>).</p>
 <section id="breakdown-of-collection-systems" class="level2">
 <h2 class="anchored" data-anchor-id="breakdown-of-collection-systems">Breakdown of collection systems</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>fig_1 <span class="ot">&lt;-</span> </span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(recycling, <span class="fu">aes</span>(collection_type, <span class="at">fill =</span> collection_type)) <span class="sc">+</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>() <span class="sc">+</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="at">stat =</span> <span class="st">"count"</span>, <span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">after_stat</span>(count)), <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.5</span>) <span class="sc">+</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Collection system"</span>,</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Number of local authorities"</span>,</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Breakdown of local authorities by recycling collection system"</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_brewer</span>(<span class="at">palette =</span> <span class="st">"Dark2"</span>, <span class="at">guide =</span> <span class="st">"none"</span>)</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>fig_1</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>fig_1 <span class="ot">&lt;-</span> </span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(recycling, <span class="fu">aes</span>(collection_type, <span class="at">fill =</span> collection_type)) <span class="sc">+</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>() <span class="sc">+</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="at">stat =</span> <span class="st">"count"</span>, <span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">after_stat</span>(count)), <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Collection system"</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Number of local authorities"</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_brewer</span>(<span class="at">palette =</span> <span class="st">"Dark2"</span>, <span class="at">guide =</span> <span class="st">"none"</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>fig_1</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="recycling-systems-analysis_files/figure-html/bar-chart-system-1.png" class="img-fluid figure-img" width="672"></p>
+<div id="fig-collection-systems" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-collection-systems-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="recycling-systems-analysis_files/figure-html/fig-collection-systems-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-collection-systems-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Breakdown of local authorities by recycling collection system
+</figcaption>
 </figure>
 </div>
 </div>
 </div>
-<p>The bar chart shows that the group sizes are uneven. 157 (51%) LA use a co-mingled system, 112 (36%) use a two-stream system and 40 (13%) use a multi-stream system. This unevenness will become a factor in selecting the most appropriate test of statistical significance.</p>
+<p>The bar chart in <a href="#fig-collection-systems" class="quarto-xref">Figure&nbsp;1</a> shows that the group sizes are uneven. 157 (51%) authorities use a Co-Mingled system, 112 (36%) use a Two Stream system and 40 (13%) use a Multi-Stream system.</p>
 </section>
 <section id="distribution-of-recycling-rates-by-system" class="level2">
 <h2 class="anchored" data-anchor-id="distribution-of-recycling-rates-by-system">Distribution of recycling rates by system</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>fig_2 <span class="ot">&lt;-</span> </span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_distribution</span>(</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    recycling,</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    household_recycle_rate,</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylab =</span> <span class="st">"Household recycling rate"</span>,</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Distribution of recycling rates by collection system"</span>,</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">percent =</span> <span class="cn">TRUE</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>fig_2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>fig_2 <span class="ot">&lt;-</span> </span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_distribution</span>(</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    recycling,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    household_recycle_rate,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylab =</span> <span class="st">"Household recycling rate"</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">percent =</span> <span class="cn">TRUE</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>fig_2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="recycling-systems-analysis_files/figure-html/violin-plot-recycle-rates-1.png" class="img-fluid figure-img" width="672"></p>
+<div id="fig-recycle-rate" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-recycle-rate-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="recycling-systems-analysis_files/figure-html/fig-recycle-rate-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-recycle-rate-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Distribution of household recycling rates by collection system. The box shows the median and interquartile range; the diamond shows the mean.
+</figcaption>
 </figure>
 </div>
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise_distribution</span>(recycling, household_recycle_rate) <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise_distribution</span>(recycling, household_recycle_rate) <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="tbl-recycle-rate" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-recycle-rate-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: Summary statistics for household recycling rate by collection system
+</figcaption>
+<div aria-describedby="tbl-recycle-rate-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<table class="caption-top table table-sm table-striped small">
+<table class="cell caption-top table table-sm table-striped small">
 <thead>
 <tr class="header">
 <th style="text-align: left;">collection_type</th>
@@ -293,33 +320,46 @@ $ household_recycle_rate &lt;dbl&gt; 0.3259759, 0.2975028, 0.3815194, 0.2565815,
 </table>
 </div>
 </div>
-<p>From the distribution plot and the summary table, we can see that multi-stream collection systems achieved the highest mean and median recycling rate in 2021, and co-mingled systems achieved the lowest rates. The skew number tells us that the distributions are not normal. Co-mingled systems show a positive skew, while two stream and multi-stream both show a negative skew.</p>
+</figure>
+</div>
+</div>
+<p>As shown in <a href="#tbl-recycle-rate" class="quarto-xref">Table&nbsp;1</a>, we can see that Multi-Stream collection systems achieved the highest mean and median recycling rate in 2021, and Co-Mingled systems achieved the lowest rates. The skew number tells us that the distributions are not normal. Co-Mingled systems show a positive skew, while Two Stream and Multi-Stream both show a negative skew.</p>
 </section>
-<section id="why-we-analyze-rate-rather-than-volume" class="level2">
-<h2 class="anchored" data-anchor-id="why-we-analyze-rate-rather-than-volume">Why we analyze rate rather than volume</h2>
+<section id="why-we-analyse-rate-rather-than-volume" class="level2">
+<h2 class="anchored" data-anchor-id="why-we-analyse-rate-rather-than-volume">Why we analyse rate rather than volume</h2>
 <p>The raw volumes of household waste recycled by local authority are heavily right-skewed, as shown in the plots below. They are dominated by local authority size, since a large council collects and recycles more of everything. This is why the analysis works on the rate of recycling, which normalises for size. It is also why we will use <code>log(population)</code> when we come to control for size in the regression.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>fig_3 <span class="ot">&lt;-</span> </span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_distribution</span>(</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    recycling,</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    household_collected,</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylab =</span> <span class="st">"Household waste collected (tonnes)"</span>,</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Distribution of household waste collected by collection system"</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>fig_3</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>fig_3 <span class="ot">&lt;-</span> </span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_distribution</span>(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    recycling,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    household_collected,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylab =</span> <span class="st">"Household waste collected (tonnes)"</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>fig_3</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="recycling-systems-analysis_files/figure-html/violin-plot-household-collected-1.png" class="img-fluid figure-img" width="672"></p>
+<div id="fig-household-collected" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-household-collected-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="recycling-systems-analysis_files/figure-html/fig-household-collected-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-household-collected-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Distribution of household waste collected by collection system. The box shows the median and interquartile range; the diamond shows the mean.
+</figcaption>
 </figure>
 </div>
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise_distribution</span>(recycling, household_collected) <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise_distribution</span>(recycling, household_collected) <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="tbl-household-collected" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-household-collected-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2: Summary statistics for amount of household waste collected (tonnes) by collection system
+</figcaption>
+<div aria-describedby="tbl-household-collected-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<table class="caption-top table table-sm table-striped small">
+<table class="cell caption-top table table-sm table-striped small">
 <thead>
 <tr class="header">
 <th style="text-align: left;">collection_type</th>
@@ -359,28 +399,41 @@ $ household_recycle_rate &lt;dbl&gt; 0.3259759, 0.2975028, 0.3815194, 0.2565815,
 </table>
 </div>
 </div>
+</figure>
+</div>
+</div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>fig_4 <span class="ot">&lt;-</span> </span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_distribution</span>(</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    recycling,</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    household_recycled,</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylab =</span> <span class="st">"Household waste recycled (tonnes)"</span>,</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Distribution of household waste recycled by collection system"</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>fig_4</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>fig_4 <span class="ot">&lt;-</span> </span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_distribution</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    recycling,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    household_recycled,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylab =</span> <span class="st">"Household waste recycled (tonnes)"</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>fig_4</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="recycling-systems-analysis_files/figure-html/violin-plot-household-recycled-1.png" class="img-fluid figure-img" width="672"></p>
+<div id="fig-household-recycled" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-household-recycled-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="recycling-systems-analysis_files/figure-html/fig-household-recycled-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-household-recycled-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Distribution of household waste recycled by collection system. The box shows the median and interquartile range; the diamond shows the mean.
+</figcaption>
 </figure>
 </div>
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise_distribution</span>(recycling, household_recycled) <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise_distribution</span>(recycling, household_recycled) <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="tbl-household-recycled" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-household-recycled-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;3: Summary statistics for amount of waste recycled (in tonnes) by collection system
+</figcaption>
+<div aria-describedby="tbl-household-recycled-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<table class="caption-top table table-sm table-striped small">
+<table class="cell caption-top table table-sm table-striped small">
 <thead>
 <tr class="header">
 <th style="text-align: left;">collection_type</th>
@@ -420,6 +473,9 @@ $ household_recycle_rate &lt;dbl&gt; 0.3259759, 0.2975028, 0.3815194, 0.2565815,
 </table>
 </div>
 </div>
+</figure>
+</div>
+</div>
 </section>
 </section>
 <section id="test-for-significance" class="level1">
@@ -428,9 +484,9 @@ $ household_recycle_rate &lt;dbl&gt; 0.3259759, 0.2975028, 0.3815194, 0.2565815,
 <h2 class="anchored" data-anchor-id="kruskal-wallis-test">Kruskal-Wallis test</h2>
 <p>The default statistical test would be a one-way ANOVA, which compares group means. But ANOVA assumes each group is roughly normally distributed with similar variance, and our groups are uneven (157 / 112 / 40) and somewhat skewed, as shown above. Instead, we will use the Kruskal-Wallis test: the non-parametric equivalent. It works on the ranks of the values instead of the raw values, so it makes no assumption about the shape of the distribution, and it handles unequal group sizes comfortably. It tests whether at least one group tends to sit higher than the others.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the KW test for recycling rate as explained by collection type</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>kw <span class="ot">&lt;-</span> <span class="fu">kruskal.test</span>(household_recycle_rate <span class="sc">~</span> collection_type, <span class="at">data =</span> recycling)</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>kw</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the KW test for recycling rate as explained by collection type</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>kw <span class="ot">&lt;-</span> <span class="fu">kruskal.test</span>(household_recycle_rate <span class="sc">~</span> collection_type, <span class="at">data =</span> recycling)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>kw</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
     Kruskal-Wallis rank sum test
@@ -439,17 +495,23 @@ data:  household_recycle_rate by collection_type
 Kruskal-Wallis chi-squared = 9.8269, df = 2, p-value = 0.007347</code></pre>
 </div>
 </div>
-<p>The test returns H = 9.83 on 2 degrees of freedom, p = 0.007. At least one collection system therefore differs from the others to a statistically significant degree.</p>
+<p>The test returns H = 9.83 on 2 degrees of freedom, <em>p</em> = 0.007. At least one collection system therefore differs from the others to a statistically significant degree.</p>
 <p>This tells us that a difference exists somewhere, but not where, and not how large. Both of those questions matter more than the first.</p>
 </section>
 <section id="effect-size" class="level2">
 <h2 class="anchored" data-anchor-id="effect-size">Effect size</h2>
-<p>However, a p-value only tells us whether there is an effect, not how big it is. With 309 authorities, even a trivial difference can come out significant. Our question asks about a meaningful impact, so we need an effect size, which measures how much of the variation in recycling rates is explained by collection system.</p>
+<p>However, a <em>p</em>-value only tells us whether there is an effect, not how big it is. With 309 authorities, even a trivial difference can come out significant. Our question asks about a meaningful impact, so we need an effect size, which measures how much of the variation in recycling rates is explained by collection system.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>eff <span class="ot">&lt;-</span> recycling <span class="sc">|&gt;</span> <span class="fu">kruskal_effsize</span>(household_recycle_rate <span class="sc">~</span> collection_type)</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>eff <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>eff <span class="ot">&lt;-</span> recycling <span class="sc">|&gt;</span> <span class="fu">kruskal_effsize</span>(household_recycle_rate <span class="sc">~</span> collection_type)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>eff <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="tbl-kw-effect" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-kw-effect-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;4: Kruskal-Wallis effect size for recycling rates as explained by collection system
+</figcaption>
+<div aria-describedby="tbl-kw-effect-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<table class="caption-top table table-sm table-striped small">
+<table class="cell caption-top table table-sm table-striped small">
 <thead>
 <tr class="header">
 <th style="text-align: left;">.y.</th>
@@ -471,34 +533,56 @@ Kruskal-Wallis chi-squared = 9.8269, df = 2, p-value = 0.007347</code></pre>
 </table>
 </div>
 </div>
-<p>Eta-squared is 0.026, meaning collection system accounts for under 2.6 per cent of the variation in recycling rates between local authorities. By the conventional thresholds (0.01 small, 0.06 medium, 0.14 large) this is a small effect. This means that the collection system is not the biggest contributor to the recycling rate.</p>
+</figure>
+</div>
+</div>
+<p>Eta-squared is 0.026, meaning collection system accounts for under 2.6% of the variation in recycling rates between local authorities. By the conventional thresholds (0.01 small, 0.06 medium, 0.14 large) this is a small effect. This means that the collection system is not the biggest contributor to the recycling rate.</p>
 </section>
 <section id="dunns-test" class="level2">
 <h2 class="anchored" data-anchor-id="dunns-test">Dunn’s test</h2>
-<p>Finally, we can run Dunn’s test to test the collection systems in a pairwise manner, which allows us to see whether any one of them show a significant difference in recycling rate compared to another system.</p>
+<p>Finally, we can run Dunn’s test to test the collection systems in a pairwise manner, which allows us to see whether any one of them show a significant difference in recycling rate compared to the others.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>dunn <span class="ot">&lt;-</span> recycling <span class="sc">|&gt;</span> </span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dunn_test</span>(household_recycle_rate <span class="sc">~</span> collection_type,</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">p.adjust.method =</span> <span class="st">"holm"</span>)</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>dunn <span class="sc">|&gt;</span> </span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>medians <span class="ot">&lt;-</span> recycling <span class="sc">|&gt;</span> </span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(collection_type) <span class="sc">|&gt;</span> </span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">median_rate =</span> <span class="fu">median</span>(household_recycle_rate)) <span class="sc">|&gt;</span> </span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">collection_type =</span> <span class="fu">as.character</span>(collection_type))</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>dunn <span class="ot">&lt;-</span> recycling <span class="sc">|&gt;</span> </span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dunn_test</span>(household_recycle_rate <span class="sc">~</span> collection_type,</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">p.adjust.method =</span> <span class="st">"holm"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(medians, <span class="at">by =</span> <span class="fu">join_by</span>(group1 <span class="sc">==</span> collection_type)) <span class="sc">|&gt;</span> </span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">median1 =</span> median_rate) <span class="sc">|&gt;</span> </span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(medians, <span class="at">by =</span> <span class="fu">join_by</span>(group2 <span class="sc">==</span> collection_type)) <span class="sc">|&gt;</span> </span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">median2 =</span> median_rate) <span class="sc">|&gt;</span> </span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">median_gap_pp =</span> <span class="fu">pp</span>(median2 <span class="sc">-</span> median1)) <span class="sc">|&gt;</span> </span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>.y., <span class="sc">-</span>median1, <span class="sc">-</span>median2)</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Function to pull out data from Dunn test</span></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>dunn_gap  <span class="ot">&lt;-</span> <span class="cf">function</span>(g1, g2) dunn<span class="sc">$</span>median_gap_pp[dunn<span class="sc">$</span>group1 <span class="sc">==</span> g1 <span class="sc">&amp;</span> dunn<span class="sc">$</span>group2 <span class="sc">==</span> g2]</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>dunn_padj <span class="ot">&lt;-</span> <span class="cf">function</span>(g1, g2) dunn<span class="sc">$</span>p.adj[dunn<span class="sc">$</span>group1 <span class="sc">==</span> g1 <span class="sc">&amp;</span> dunn<span class="sc">$</span>group2 <span class="sc">==</span> g2]</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>dunn <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="tbl-dunns-test" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-dunns-test-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;5: Summary of Dunn’s test results
+</figcaption>
+<div aria-describedby="tbl-dunns-test-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<table class="caption-top table table-sm table-striped small">
+<table class="cell caption-top table table-sm table-striped small">
 <colgroup>
-<col style="width: 25%">
+<col style="width: 13%">
+<col style="width: 16%">
+<col style="width: 4%">
+<col style="width: 4%">
 <col style="width: 12%">
-<col style="width: 14%">
-<col style="width: 4%">
-<col style="width: 4%">
-<col style="width: 11%">
-<col style="width: 6%">
-<col style="width: 6%">
-<col style="width: 14%">
+<col style="width: 7%">
+<col style="width: 7%">
+<col style="width: 16%">
+<col style="width: 17%">
 </colgroup>
 <thead>
 <tr class="header">
-<th style="text-align: left;">.y.</th>
 <th style="text-align: left;">group1</th>
 <th style="text-align: left;">group2</th>
 <th style="text-align: right;">n1</th>
@@ -507,11 +591,11 @@ Kruskal-Wallis chi-squared = 9.8269, df = 2, p-value = 0.007347</code></pre>
 <th style="text-align: right;">p</th>
 <th style="text-align: right;">p.adj</th>
 <th style="text-align: left;">p.adj.signif</th>
+<th style="text-align: right;">median_gap_pp</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">household_recycle_rate</td>
 <td style="text-align: left;">Co-Mingled</td>
 <td style="text-align: left;">Two Stream</td>
 <td style="text-align: right;">157</td>
@@ -520,9 +604,9 @@ Kruskal-Wallis chi-squared = 9.8269, df = 2, p-value = 0.007347</code></pre>
 <td style="text-align: right;">0.026</td>
 <td style="text-align: right;">0.051</td>
 <td style="text-align: left;">ns</td>
+<td style="text-align: right;">4.0</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">household_recycle_rate</td>
 <td style="text-align: left;">Co-Mingled</td>
 <td style="text-align: left;">Multi-Stream</td>
 <td style="text-align: right;">157</td>
@@ -531,9 +615,9 @@ Kruskal-Wallis chi-squared = 9.8269, df = 2, p-value = 0.007347</code></pre>
 <td style="text-align: right;">0.006</td>
 <td style="text-align: right;">0.018</td>
 <td style="text-align: left;">*</td>
+<td style="text-align: right;">4.2</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">household_recycle_rate</td>
 <td style="text-align: left;">Two Stream</td>
 <td style="text-align: left;">Multi-Stream</td>
 <td style="text-align: right;">112</td>
@@ -542,16 +626,20 @@ Kruskal-Wallis chi-squared = 9.8269, df = 2, p-value = 0.007347</code></pre>
 <td style="text-align: right;">0.251</td>
 <td style="text-align: right;">0.251</td>
 <td style="text-align: left;">ns</td>
+<td style="text-align: right;">0.2</td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
-<p>The Kruskal-Wallis test is an omnibus test: it reports that some difference exists without identifying which systems differ. Dunn’s test makes the three pairwise comparisons, using the same pooled ranks. Because running three tests inflates the chance of a false positive, the <em>p</em>-values are adjusted using the Holm correction, and it is the adjusted values (p.adj in the table above) that should be interpreted.</p>
-<p>Only one pair differs significantly after correction. Co-Mingled authorities are associated with lower recycling rates than Multi-Stream authorities (p.adj = 0.018), a median gap of 4.2pp.</p>
-<p>The other two comparisons are more nuanced. The Co-Mingled versus Two Stream comparison narrowly misses our stated threshold for significance (p.adj = 0.051), and yet the median gap is 4.0pp, which is comparable in size to the significant result above. The evidence here is suggestive but not conclusive.</p>
-<p>The Two Stream versus Multi-Stream comparison is different. It is not significant (p.adj = 0.251) and the median gap is a negligible 0.2pp. Here both the test and the estimate point the same way, towards there being little or no real difference between the two.</p>
-<p>Taken together, the pattern is consistent with the burden of separation mattering mainly at the first step, going from mixing everything into one bin to any kind of separation, with little further gain from separating into more streams. The data support this interpretation but do not establish it. With only 40 Multi-Stream authorities, this analysis has limited power to detect modest differences.</p>
+</figure>
+</div>
+</div>
+<p>The Kruskal-Wallis test is an omnibus test: it reports that some difference exists without identifying which systems differ. Dunn’s test makes the three pairwise comparisons, using the same pooled ranks. Because running three tests inflates the chance of a false positive, the <em>p</em>-values are adjusted using the Holm correction, and it is the adjusted values (<code>p.adj</code> in the table above) that should be interpreted.</p>
+<p>Only one pair differs significantly after correction. Co-Mingled authorities are associated with lower recycling rates than Multi-Stream authorities (<code>p.adj</code> = 0.018), a median gap of 4.2pp.</p>
+<p>The other two comparisons are more nuanced. The Co-Mingled versus Two Stream comparison narrowly misses our stated threshold for significance (<code>p.adj</code> = 0.051), and yet the median gap is 4pp, which is comparable in size to the significant result above. The evidence here is suggestive but not conclusive.</p>
+<p>The Two Stream versus Multi-Stream comparison is different. It is not significant (<code>p.adj</code> = 0.251) and the median gap is a negligible 0.2pp. Here both the test and the estimate point the same way, towards there being little or no real difference between the two.</p>
+<p>Taken together, the pattern is consistent with the burden of separation mattering mainly at the first step, going from mixing everything into one bin to separation into two bins, with little further gain from separating into more streams. The data support this interpretation but do not establish it. With only 40 Multi-Stream authorities, this analysis has limited power to detect modest differences.</p>
 </section>
 </section>
 <section id="controlling-for-authority-size" class="level1">
@@ -559,15 +647,27 @@ Kruskal-Wallis chi-squared = 9.8269, df = 2, p-value = 0.007347</code></pre>
 <p>Significance testing has now been taken about as far as it can usefully go. Every result has been interpreted as either significant or not significant, with one landing almost exactly on the threshold. We now have two further questions to answer.</p>
 <p>Firstly, how large is each difference, and how certain are we? We can answer this question with regression by reporting effect estimates with confidence intervals, which say more than a <em>p</em>-value alone.</p>
 <p>Secondly, is the collection system really doing the work? If Multi-Stream authorities happen to be systematically smaller, then what looks like a system effect may be a size effect in disguise. This is an example of a confounding variable. Regression addresses this by comparing systems among authorities of similar size, holding size constant.</p>
-<p>Population is used on a log scale. As the volume distributions above showed, authority size is heavily right-skewed, with a long tail of very large councils. Logging the variable means the model reads proportional differences in size, such as a doubling of population, rather than treating each additional resident as equivalent whether it is the two-thousandth or the millionth.</p>
+<p>Population is used on a log scale. As the volume distributions in <a href="#fig-household-collected" class="quarto-xref">Figure&nbsp;3</a> and <a href="#fig-household-recycled" class="quarto-xref">Figure&nbsp;4</a> showed, authority size is heavily right-skewed, with a long tail of very large councils. Logging the variable means the model reads proportional differences in size, such as a doubling of population, rather than treating each additional resident as equivalent whether it is the two-thousandth or the millionth.</p>
 <p>Co-Mingled is the reference level, so each coefficient represents the difference in recycling rate relative to a Co-Mingled authority. Because the recycling rate is a proportion, a coefficient of 0.04 corresponds to 4pp.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>mod_1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(household_recycle_rate <span class="sc">~</span> collection_type, <span class="at">data =</span> recycling)</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>mod_2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(household_recycle_rate <span class="sc">~</span> collection_type <span class="sc">+</span> <span class="fu">log</span>(population), <span class="at">data =</span> recycling)</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="fu">tidy</span>(mod_2, <span class="at">conf.int =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>mod_1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(household_recycle_rate <span class="sc">~</span> collection_type, <span class="at">data =</span> recycling)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>mod_2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(household_recycle_rate <span class="sc">~</span> collection_type <span class="sc">+</span> <span class="fu">log</span>(population), <span class="at">data =</span> recycling)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>tidy_1   <span class="ot">&lt;-</span> <span class="fu">tidy</span>(mod_1, <span class="at">conf.int =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>tidy_2   <span class="ot">&lt;-</span> <span class="fu">tidy</span>(mod_2, <span class="at">conf.int =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>glance_1 <span class="ot">&lt;-</span> <span class="fu">glance</span>(mod_1)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>glance_2 <span class="ot">&lt;-</span> <span class="fu">glance</span>(mod_2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>tidy_2 <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="tbl-regression-tidy-2" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-regression-tidy-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;6: Summary of regression for data controlled for population
+</figcaption>
+<div aria-describedby="tbl-regression-tidy-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<table class="caption-top table table-sm table-striped small">
+<table class="cell caption-top table table-sm table-striped small">
 <colgroup>
 <col style="width: 33%">
 <col style="width: 10%">
@@ -628,9 +728,20 @@ Kruskal-Wallis chi-squared = 9.8269, df = 2, p-value = 0.007347</code></pre>
 </tbody>
 </table>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glance</span>(mod_2) <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</figure>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>glance_2 <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="tbl-regression-glance-2" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-regression-glance-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;7: Further summary of regression for data controlled for population
+</figcaption>
+<div aria-describedby="tbl-regression-glance-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<table class="caption-top table table-sm table-striped small">
+<table class="cell caption-top table table-sm table-striped small">
 <colgroup>
 <col style="width: 9%">
 <col style="width: 13%">
@@ -679,9 +790,20 @@ Kruskal-Wallis chi-squared = 9.8269, df = 2, p-value = 0.007347</code></pre>
 </tbody>
 </table>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tidy</span>(mod_1, <span class="at">conf.int =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</figure>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>tidy_1 <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="tbl-regression-tidy-1" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-regression-tidy-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;8: Summary of regression for data uncontrolled for population
+</figcaption>
+<div aria-describedby="tbl-regression-tidy-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<table class="caption-top table table-sm table-striped small">
+<table class="cell caption-top table table-sm table-striped small">
 <colgroup>
 <col style="width: 33%">
 <col style="width: 10%">
@@ -733,9 +855,20 @@ Kruskal-Wallis chi-squared = 9.8269, df = 2, p-value = 0.007347</code></pre>
 </tbody>
 </table>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glance</span>(mod_1) <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</figure>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>glance_1 <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="tbl-regression-glance-1" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-regression-glance-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;9: Further summary of regression for data uncontrolled for population
+</figcaption>
+<div aria-describedby="tbl-regression-glance-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<table class="caption-top table table-sm table-striped small">
+<table class="cell caption-top table table-sm table-striped small">
 <colgroup>
 <col style="width: 9%">
 <col style="width: 13%">
@@ -785,13 +918,16 @@ Kruskal-Wallis chi-squared = 9.8269, df = 2, p-value = 0.007347</code></pre>
 </table>
 </div>
 </div>
+</figure>
+</div>
+</div>
 <section id="interpreting-the-regression-models" class="level2">
 <h2 class="anchored" data-anchor-id="interpreting-the-regression-models">Interpreting the regression models</h2>
 <p>The regression analysis showed two results.</p>
-<p>Firstly, the system effect was robust to authority size. The collection type coefficients barely changed when population was factored in: Two Stream moved from +2.5pp to +2.7pp, and Multi-Stream from +4.7pp to +4.5pp. If size had been confounding the comparison, these would have reduced materially. The association between collection system and recycling rate is not an artefact of larger or smaller councils favouring particular systems.</p>
-<p>Secondly, larger authorities recycle less. The coefficient on log(population) is -0.022 (p = 0.012), which corresponds to a fall of roughly 1.5pp in the recycling rate for each doubling of population. This is a modest but real association, and it is independent of the collection system in use.</p>
-<p>The confidence intervals are more informative than the <em>p</em>-values. Relative to Co-Mingled, Two Stream is associated with an increase of 2.7pp (95% CI: 0.4 to 5.0) and Multi-Stream with an increase of 4.5pp (95% CI: 1.2 to 7.8). Both intervals exclude zero, so both effects are likely real, but both are wide. The Multi-Stream interval spans everything from a barely noticeable 1 point to a substantial 8 points. A fair interpretation of this is that a real effect exists and its likely size is modest, but this dataset cannot pin it down precisely.</p>
-<p>There is one apparent discrepancy that we should explain. In the regression, Two Stream differs significantly from Co-Mingled (p = 0.022), whereas Dunn’s test found the same comparison borderline (p.adj = 0.051). These are not contradictory. Dunn’s raw <em>p</em>-value for that pair was 0.026, and the Holm correction for three comparisons roughly doubled it. The regression applies no such correction. The two results agree on the substance: there is a difference of around 3 to 4 percentage points, and the evidence for it is real but not overwhelming.</p>
+<p>Firstly, the system effect was robust to authority size. The collection type coefficients barely changed when population was factored in: Two Stream moved from 2.5pp to 2.7pp, and Multi-Stream from 4.6pp to 4.5pp. If size had been confounding the comparison, these would have reduced materially. The association between collection system and recycling rate is not an artefact of larger or smaller councils favouring particular systems.</p>
+<p>Secondly, larger authorities recycle less. The coefficient on <code>log(population)</code> is -0.022 (p = 0.012), which corresponds to a fall of roughly 1.5pp in the recycling rate for each doubling of population. This is a modest but real association, and it is independent of the collection system in use.</p>
+<p>The confidence intervals are more informative than the <em>p</em>-values. Relative to Co-Mingled, Two Stream is associated with an increase of 2.7pp (95% CI: 0.4 to 5) and Multi-Stream with an increase of 4.5pp (95% CI: 1.2 to 7.8). Both intervals exclude zero, so both effects are likely real, but both are wide. The Multi-Stream interval spans everything from a barely noticeable 1pp to a substantial 8pp. A fair interpretation of this is that a real effect exists and its likely size is modest, but this dataset cannot pin it down precisely.</p>
+<p>There is one apparent discrepancy that we should explain. In the regression, Two Stream differs significantly from Co-Mingled (<em>p</em> = 0.022), whereas Dunn’s test found the same comparison borderline (<code>p.adj</code> = 0.051). These are not contradictory. Dunn’s raw <em>p</em>-value for that pair was 0.051, and the Holm correction for three comparisons roughly doubled it. The regression applies no such correction. The two results agree on the substance: there is a difference of around 3 to 4pp, and the evidence for it is real but not overwhelming.</p>
 <p>Finally, the model explains very little. The R-squared is 0.05. This means that 95% of the variation in recycling rates between English local authorities lies outside collection system and population entirely.</p>
 </section>
 </section>
@@ -799,9 +935,9 @@ Kruskal-Wallis chi-squared = 9.8269, df = 2, p-value = 0.007347</code></pre>
 <h1>Conclusion</h1>
 <p><strong>Does the collection system have a meaningful impact on recycling rates?</strong></p>
 <p>The answer has three parts, and they pull in different directions.</p>
-<p><strong>Yes, there is a real difference, and it is not trivial in size.</strong> Authorities that require householders to separate their recycling are associated with higher recycling rates than those that collect everything co-mingled. Adjusting for authority size, the gap is 2.7pp for Two Stream and 4.5pp for Multi-Stream, relative to Co-Mingled. A 4 point shift in the national recycling rate would be a substantial policy outcome, so this is not a difference that can be dismissed as academic.</p>
+<p><strong>Yes, there is a real difference, and it is not trivial in size.</strong> Authorities that require householders to separate their recycling are associated with higher recycling rates than those that collect everything co-mingled. Adjusting for authority size, the gap is 2.7pp for Two Stream and 4.5pp for Multi-Stream, relative to Co-Mingled. A 4pp shift in the national recycling rate would be a substantial policy outcome, so this is not a difference that can be dismissed as academic.</p>
 <p><strong>But the effect appears to be a step, not a ladder.</strong> The evidence does not support the intuition that asking householders to sort into ever more streams yields ever higher rates. Two Stream and Multi-Stream authorities are statistically indistinguishable from one another, with a median gap of 0.2pp. What appears to matter is whether households separate their recycling at all, not how finely they separate it. If this interpretation is correct, it has a clear practical implication: the additional burden that Multi-Stream places on householders, relative to Two Stream, gives no detectable improvement. This is the most interesting finding in the analysis, and it is also the one held most tentatively, resting as it does on only 40 Multi-Stream authorities.</p>
-<p><strong>And most of what drives recycling rates lies elsewhere.</strong> Collection system explains under 3% of the variation between authorities. Controlling for population raises the figure only to 5%. The other 95% belongs to factors this analysis cannot see. A local authority hoping to transform its recycling performance by changing its bin system alone would, on this evidence, be disappointed. The system is one lever among many, and not the largest.</p>
+<p><strong>And most of what drives recycling rates lies elsewhere.</strong> Collection system explains under 2.6% of the variation between authorities. Controlling for population raises the figure only to 5%. The other 95% belongs to factors this analysis cannot see. A local authority hoping to transform its recycling performance by changing its bin system alone would, on this evidence, be disappointed. The system is one lever among many, and not the largest.</p>
 <p>There are also sound reasons why an authority might choose a system irrespective of its effect on rates. Without access to a Materials Recovery Facility, where co-mingled waste can be mechanically sorted, a council may have little practical alternative to kerbside sorting. The choice of system is constrained by infrastructure, cost and geography, not made freely on the basis of expected recycling rate.</p>
 <section id="data-sources-and-limitations" class="level2">
 <h2 class="anchored" data-anchor-id="data-sources-and-limitations">Data sources and limitations</h2>

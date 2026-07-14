@@ -35,8 +35,6 @@ library(broom)
 
 ## Import the recycling data
 
-The dataset includes information about household recycling for 309 local authorities (LA) in England in 2021. It contains the unique code and name of each LA, the population of the LA in 2021, the type of collection system in place in 2021, the amount of household waste collected and recycled in 2021 (in tonnes) and the household recycling rate.
-
 ```{r import-data, message=FALSE, warning=FALSE}
 recycling <- 
   read_csv(here("data/cln/data_recycling_system.csv")) |> 
@@ -48,11 +46,15 @@ recycling <-
 glimpse(recycling)
 ```
 
-## Setup the code for plotting and summarising
+The dataset includes information about household recycling for `r nrow(recycling)` local authorities in England in 2021. It contains the unique code and name of each authority, the population of the authority in 2021, the type of collection system in place in 2021, the amount of household waste collected and recycled in 2021 (in tonnes) and the household recycling rate.
+
+## Helper code
+
+The chunk below contains code to support consistent plotting.
 
 ```{r plotting-summarising-code}
 # We'll be creating a number of similar plots, so we can wrap the code into a function
-plot_distribution <- function(data, yvar, ylab, title, percent = FALSE) {
+plot_distribution <- function(data, yvar, ylab, percent = FALSE) {
   p <- ggplot(data, aes(x = collection_type, y = {{ yvar }})) +
     geom_violin(aes(fill = collection_type, colour = collection_type),
                 linewidth = 1, alpha = 0.5) +
@@ -64,9 +66,7 @@ plot_distribution <- function(data, yvar, ylab, title, percent = FALSE) {
     scale_fill_brewer(palette = "Dark2", guide = "none") +
     labs(
       x = "Collection system",
-      y = ylab,
-      title = title,
-      caption = "Box shows median and interquartile range; diamond shows the mean"
+      y = ylab
     )
 
   if (percent) p <- p + scale_y_continuous(labels = scales::percent)
@@ -87,81 +87,114 @@ summarise_distribution <- function(data, yvar) {
 }
 ```
 
+The chunk below contains code to support reporting of results.
+
+```{r reporting-helpers}
+# Convert a proportion to percentage points
+pp <- function(x, digits = 1) round(x * 100, digits)
+
+# Count and share of LAs using a given collection system
+n_sys   <- function(x) sum(recycling$collection_type == x)
+pct_sys <- function(x) round(mean(recycling$collection_type == x) * 100)
+
+# Pull a single value out of a broom tidy tibble by term name
+get_term <- function(tbl, term_name, col = "estimate") {
+  tbl[[col]][tbl$term == term_name]
+}
+```
 
 # Visualise the distributions
-Before we run a significance test, let's view both the number of LA employing each type of collection system, and the distributions of recycling rates by collection type.
+Before we run a significance test, let's view both the number of local authorities employing each type of collection system (see @fig-collection-systems), and the distributions of recycling rates by collection type (see @fig-recycle-rate).
 
 ## Breakdown of collection systems
-```{r bar-chart-system}
+```{r}
+#| label: fig-collection-systems
+#| fig-cap: "Breakdown of local authorities by recycling collection system"
+
 fig_1 <- 
   ggplot(recycling, aes(collection_type, fill = collection_type)) +
   geom_bar() +
   geom_text(stat = "count", aes(label = after_stat(count)), vjust = -0.5) +
   labs(
     x = "Collection system",
-    y = "Number of local authorities",
-    title = "Breakdown of local authorities by recycling collection system"
+    y = "Number of local authorities"
   ) +
   scale_fill_brewer(palette = "Dark2", guide = "none")
 
 fig_1
 ```
 
-The bar chart shows that the group sizes are uneven. 157 (51%) LA use a co-mingled system, 112 (36%) use a two-stream system and 40 (13%) use a multi-stream system. This unevenness will become a factor in selecting the most appropriate test of statistical significance.
+The bar chart in @fig-collection-systems shows that the group sizes are uneven. `r n_sys("Co-Mingled")` (`r pct_sys("Co-Mingled")`%) authorities use a Co-Mingled system, `r n_sys("Two Stream")` (`r pct_sys("Two Stream")`%) use a Two Stream system and `r n_sys("Multi-Stream")` (`r pct_sys("Multi-Stream")`%) use a Multi-Stream system.
 
 ## Distribution of recycling rates by system
-```{r violin-plot-recycle-rates}
+```{r}
+#| label: fig-recycle-rate
+#| fig-cap: "Distribution of household recycling rates by collection system. The box shows the median and interquartile range; the diamond shows the mean."
+
 fig_2 <- 
   plot_distribution(
     recycling,
     household_recycle_rate,
     ylab = "Household recycling rate",
-    title = "Distribution of recycling rates by collection system",
     percent = TRUE
   )
 
 fig_2
 ```
 
-```{r summary-stats-recycle-rates}
+```{r}
+#| label: tbl-recycle-rate
+#| tbl-cap: "Summary statistics for household recycling rate by collection system"
+
 summarise_distribution(recycling, household_recycle_rate) |> kable(digits = 3)
 ```
 
-From the distribution plot and the summary table, we can see that multi-stream collection systems achieved the highest mean and median recycling rate in 2021, and co-mingled systems achieved the lowest rates. The skew number tells us that the distributions are not normal. Co-mingled systems show a positive skew, while two stream and multi-stream both show a negative skew.
+As shown in @tbl-recycle-rate, we can see that Multi-Stream collection systems achieved the highest mean and median recycling rate in 2021, and Co-Mingled systems achieved the lowest rates. The skew number tells us that the distributions are not normal. Co-Mingled systems show a positive skew, while Two Stream and Multi-Stream both show a negative skew.
 
-## Why we analyze rate rather than volume
+## Why we analyse rate rather than volume
 
 The raw volumes of household waste recycled by local authority are heavily right-skewed, as shown in the plots below. They are dominated by local authority size, since a large council collects and recycles more of everything. This is why the analysis works on the rate of recycling, which normalises for size. It is also why we will use `log(population)` when we come to control for size in the regression.
 
-```{r violin-plot-household-collected}
+```{r}
+#| label: fig-household-collected
+#| fig-cap: "Distribution of household waste collected by collection system. The box shows the median and interquartile range; the diamond shows the mean."
+
 fig_3 <- 
   plot_distribution(
     recycling,
     household_collected,
-    ylab = "Household waste collected (tonnes)",
-    title = "Distribution of household waste collected by collection system"
+    ylab = "Household waste collected (tonnes)"
   )
 
 fig_3
 ```
 
-```{r summary-stats-household-collected}
+```{r}
+#| label: tbl-household-collected
+#| tbl-cap: "Summary statistics for amount of household waste collected (tonnes) by collection system"
+#| 
 summarise_distribution(recycling, household_collected) |> kable(digits = 3)
 ```
 
-```{r violin-plot-household-recycled}
+```{r}
+#| label: fig-household-recycled
+#| fig-cap: "Distribution of household waste recycled by collection system. The box shows the median and interquartile range; the diamond shows the mean."
+
+
 fig_4 <- 
   plot_distribution(
     recycling,
     household_recycled,
-    ylab = "Household waste recycled (tonnes)",
-    title = "Distribution of household waste recycled by collection system"
+    ylab = "Household waste recycled (tonnes)"
   )
 
 fig_4
 ```
 
-```{r summary-stats-household-recycled}
+```{r}
+#| label: tbl-household-recycled
+#| tbl-cap: "Summary statistics for amount of waste recycled (in tonnes) by collection system"
+
 summarise_distribution(recycling, household_recycled) |> kable(digits = 3)
 ```
 
@@ -169,7 +202,7 @@ summarise_distribution(recycling, household_recycled) |> kable(digits = 3)
 
 ## Kruskal-Wallis test
 
-The default statistical test would be a one-way ANOVA, which compares group means. But ANOVA assumes each group is roughly normally distributed with similar variance, and our groups are uneven (157 / 112 / 40) and somewhat skewed, as shown above. Instead, we will use the Kruskal-Wallis test: the non-parametric equivalent. It works on the ranks of the values instead of the raw values, so it makes no assumption about the shape of the distribution, and it handles unequal group sizes comfortably. It tests whether at least one group tends to sit higher than the others.
+The default statistical test would be a one-way ANOVA, which compares group means. But ANOVA assumes each group is roughly normally distributed with similar variance, and our groups are uneven (`r n_sys("Co-Mingled")` / `r n_sys("Two Stream")` / `r n_sys("Multi-Stream")`) and somewhat skewed, as shown above. Instead, we will use the Kruskal-Wallis test: the non-parametric equivalent. It works on the ranks of the values instead of the raw values, so it makes no assumption about the shape of the distribution, and it handles unequal group sizes comfortably. It tests whether at least one group tends to sit higher than the others.
 
 ```{r kruskal-wallis-test}
 # Run the KW test for recycling rate as explained by collection type
@@ -177,46 +210,66 @@ kw <- kruskal.test(household_recycle_rate ~ collection_type, data = recycling)
 kw
 ```
 
-The test returns H = `r round(kw$statistic, 2)` on `r kw$parameter` degrees of freedom, p = `r round(kw$p.value, 3)`. At least one collection system therefore differs from the others to a statistically significant degree.
+The test returns H = `r round(kw$statistic, 2)` on `r kw$parameter` degrees of freedom, *p* = `r round(kw$p.value, 3)`. At least one collection system therefore differs from the others to a statistically significant degree.
 
 This tells us that a difference exists somewhere, but not where, and not how large. Both of those questions matter more than the first.
 
 ## Effect size
 
-However, a p-value only tells us whether there is an effect, not how big it is. With 309 authorities, even a trivial difference can come out significant. Our question asks about a meaningful impact, so we need an effect size, which measures how much of the variation in recycling rates is explained by collection system.
+However, a *p*-value only tells us whether there is an effect, not how big it is. With `r nrow(recycling)` authorities, even a trivial difference can come out significant. Our question asks about a meaningful impact, so we need an effect size, which measures how much of the variation in recycling rates is explained by collection system.
 
-```{r kruskal-wallis-effect}
+```{r}
+#| label: tbl-kw-effect
+#| tbl-cap: "Kruskal-Wallis effect size for recycling rates as explained by collection system"
+
+
 eff <- recycling |> kruskal_effsize(household_recycle_rate ~ collection_type)
 eff |> kable(digits = 3)
 ```
 
-Eta-squared is `r round(eff$effsize, 3)`, meaning collection system accounts for under `r round(eff$effsize * 100, 1)` per cent of the variation in recycling rates between local authorities. By the conventional thresholds (0.01 small, 0.06 medium, 0.14 large) this is a small effect. This means that the collection system is not the biggest contributor to the recycling rate.
+Eta-squared is `r round(eff$effsize, 3)`, meaning collection system accounts for under `r round(eff$effsize * 100, 1)`% of the variation in recycling rates between local authorities. By the conventional thresholds (0.01 small, 0.06 medium, 0.14 large) this is a small effect. This means that the collection system is not the biggest contributor to the recycling rate.
 
 ## Dunn's test
 
-Finally, we can run Dunn's test to test the collection systems in a pairwise manner, which allows us to see whether any one of them show a significant difference in recycling rate compared to another system.
+Finally, we can run Dunn's test to test the collection systems in a pairwise manner, which allows us to see whether any one of them show a significant difference in recycling rate compared to the others.
 
-```{r dunns-test}
+```{r}
+#| label: tbl-dunns-test
+#| tbl-cap: "Summary of Dunn's test results"
+
+
+medians <- recycling |> 
+  group_by(collection_type) |> 
+  summarise(median_rate = median(household_recycle_rate)) |> 
+  mutate(collection_type = as.character(collection_type))
+
 dunn <- recycling |> 
   dunn_test(household_recycle_rate ~ collection_type,
-            p.adjust.method = "holm")
+            p.adjust.method = "holm") |> 
+  left_join(medians, by = join_by(group1 == collection_type)) |> 
+  rename(median1 = median_rate) |> 
+  left_join(medians, by = join_by(group2 == collection_type)) |> 
+  rename(median2 = median_rate) |> 
+  mutate(median_gap_pp = pp(median2 - median1)) |> 
+  select(-.y., -median1, -median2)
 
-dunn |> 
-  kable(digits = 3)
+# Function to pull out data from Dunn test
+dunn_gap  <- function(g1, g2) dunn$median_gap_pp[dunn$group1 == g1 & dunn$group2 == g2]
+dunn_padj <- function(g1, g2) dunn$p.adj[dunn$group1 == g1 & dunn$group2 == g2]
+
+dunn |> kable(digits = 3)
 ```
 
-The Kruskal-Wallis test is an omnibus test: it reports that some difference exists without identifying which systems differ. Dunn's test makes the three pairwise comparisons, using the same pooled ranks. Because running three tests inflates the chance of a false positive, the *p*-values are adjusted using the Holm correction, and it is the adjusted values (p.adj in the table above) that should be interpreted.
+The Kruskal-Wallis test is an omnibus test: it reports that some difference exists without identifying which systems differ. Dunn's test makes the three pairwise comparisons, using the same pooled ranks. Because running three tests inflates the chance of a false positive, the *p*-values are adjusted using the Holm correction, and it is the adjusted values (`p.adj` in the table above) that should be interpreted.
 
-Only one pair differs significantly after correction. Co-Mingled authorities are associated with lower recycling rates than Multi-Stream authorities (p.adj = `r round(dunn$p.adj[2], 3)`), a median gap of 4.2pp.
+Only one pair differs significantly after correction. Co-Mingled authorities are associated with lower recycling rates than Multi-Stream authorities (`p.adj` = `r round(dunn_padj("Co-Mingled", "Multi-Stream"), 3)`), a median gap of `r round(dunn_gap("Co-Mingled", "Multi-Stream"),1)`pp.
 
 The other two comparisons are more nuanced. The Co-Mingled versus Two Stream comparison narrowly misses our stated
-threshold for significance (p.adj = `r round(dunn$p.adj[1], 3)`), and yet the median gap is 4.0pp, which is comparable
-in size to the significant result above. The evidence here is suggestive but not conclusive.
+threshold for significance (`p.adj` = `r round(dunn_padj("Co-Mingled","Two Stream"), 3)`), and yet the median gap is `r round(dunn_gap("Co-Mingled","Two Stream"),1)`pp, which is comparable in size to the significant result above. The evidence here is suggestive but not conclusive.
 
-The Two Stream versus Multi-Stream comparison is different. It is not significant (p.adj = `r round(dunn$p.adj[3], 3)`) and the median gap is a negligible 0.2pp. Here both the test and the estimate point the same way, towards there being little or no real difference between the two.
+The Two Stream versus Multi-Stream comparison is different. It is not significant (`p.adj` = `r round(dunn_padj("Two Stream","Multi-Stream"), 3)`) and the median gap is a negligible `r round(dunn_gap("Two Stream","Multi-Stream"),1)`pp. Here both the test and the estimate point the same way, towards there being little or no real difference between the two.
 
-Taken together, the pattern is consistent with the burden of separation mattering mainly at the first step, going from mixing everything into one bin to any kind of separation, with little further gain from separating into more streams. The data support this interpretation but do not establish it. With only 40 Multi-Stream authorities, this analysis
-has limited power to detect modest differences.
+Taken together, the pattern is consistent with the burden of separation mattering mainly at the first step, going from mixing everything into one bin to separation into two bins, with little further gain from separating into more streams. The data support this interpretation but do not establish it. With only `r n_sys("Multi-Stream")` Multi-Stream authorities, this analysis has limited power to detect modest differences.
 
 # Controlling for authority size
 
@@ -226,8 +279,7 @@ Firstly, how large is each difference, and how certain are we? We can answer thi
 
 Secondly, is the collection system really doing the work? If Multi-Stream authorities happen to be systematically smaller, then what looks like a system effect may be a size effect in disguise. This is an example of a confounding variable. Regression addresses this by comparing systems among authorities of similar size, holding size constant.
 
-Population is used on a log scale. As the volume distributions above showed, authority size is heavily right-skewed, with a long tail of very large councils. Logging the variable means the model reads proportional differences in size, such as a doubling of population, rather than treating each additional resident as equivalent whether it is
-the two-thousandth or the millionth.
+Population is used on a log scale. As the volume distributions in @fig-household-collected and @fig-household-recycled showed, authority size is heavily right-skewed, with a long tail of very large councils. Logging the variable means the model reads proportional differences in size, such as a doubling of population, rather than treating each additional resident as equivalent whether it is the two-thousandth or the millionth.
 
 Co-Mingled is the reference level, so each coefficient represents the difference in recycling rate relative to a Co-Mingled authority. Because the recycling rate is a proportion, a coefficient of 0.04 corresponds to 4pp.
 
@@ -235,26 +287,55 @@ Co-Mingled is the reference level, so each coefficient represents the difference
 mod_1 <- lm(household_recycle_rate ~ collection_type, data = recycling)
 mod_2 <- lm(household_recycle_rate ~ collection_type + log(population), data = recycling)
 
-tidy(mod_2, conf.int = TRUE) |> kable(digits = 4)
-glance(mod_2) |> kable(digits = 4)
+tidy_1   <- tidy(mod_1, conf.int = TRUE)
+tidy_2   <- tidy(mod_2, conf.int = TRUE)
+glance_1 <- glance(mod_1)
+glance_2 <- glance(mod_2)
+```
 
-tidy(mod_1, conf.int = TRUE) |> kable(digits = 4)
-glance(mod_1) |> kable(digits = 4)
+```{r}
+#| label: tbl-regression-tidy-2
+#| tbl-cap: "Summary of regression for data controlled for population"
+
+
+tidy_2 |> kable(digits = 4)
+```
+
+```{r}
+#| label: tbl-regression-glance-2
+#| tbl-cap: "Further summary of regression for data controlled for population"
+
+
+glance_2 |> kable(digits = 4)
+```
+
+```{r}
+#| label: tbl-regression-tidy-1
+#| tbl-cap: "Summary of regression for data uncontrolled for population"
+
+tidy_1 |> kable(digits = 4)
+```
+
+```{r}
+#| label: tbl-regression-glance-1
+#| tbl-cap: "Further summary of regression for data uncontrolled for population"
+
+glance_1 |> kable(digits = 4)
 ```
 
 ## Interpreting the regression models
 
 The regression analysis showed two results.
 
-Firstly, the system effect was robust to authority size. The collection type coefficients barely changed when population was factored in: Two Stream moved from +2.5pp to +2.7pp, and Multi-Stream from +4.7pp to +4.5pp. If size had been confounding the comparison, these would have reduced materially. The association between collection system and recycling rate is not an artefact of larger or smaller councils favouring particular systems.
+Firstly, the system effect was robust to authority size. The collection type coefficients barely changed when population was factored in: Two Stream moved from `r pp(get_term(tidy_1, "collection_typeTwo Stream"))`pp to `r pp(get_term(tidy_2, "collection_typeTwo Stream"))`pp, and Multi-Stream from `r pp(get_term(tidy_1, "collection_typeMulti-Stream"))`pp to `r pp(get_term(tidy_2, "collection_typeMulti-Stream"))`pp. If size had been confounding the comparison, these would have reduced materially. The association between collection system and recycling rate is not an artefact of larger or smaller councils favouring particular systems.
 
-Secondly, larger authorities recycle less. The coefficient on log(population) is -0.022 (p = 0.012), which corresponds to a fall of roughly 1.5pp in the recycling rate for each doubling of population. This is a modest but real association, and it is independent of the collection system in use.
+Secondly, larger authorities recycle less. The coefficient on `log(population)` is `r round(get_term(tidy_2, "log(population)"), 3)` (p = `r round(get_term(tidy_2, "log(population)", "p.value"), 3)`), which corresponds to a fall of roughly `r abs(pp(get_term(tidy_2, "log(population)") * log(2)))`pp in the recycling rate for each doubling of population. This is a modest but real association, and it is independent of the collection system in use.
 
-The confidence intervals are more informative than the *p*-values. Relative to Co-Mingled, Two Stream is associated with an increase of 2.7pp (95% CI: 0.4 to 5.0) and Multi-Stream with an increase of 4.5pp (95% CI: 1.2 to 7.8). Both intervals exclude zero, so both effects are likely real, but both are wide. The Multi-Stream interval spans everything from a barely noticeable 1 point to a substantial 8 points. A fair interpretation of this is that a real effect exists and its likely size is modest, but this dataset cannot pin it down precisely.
+The confidence intervals are more informative than the *p*-values. Relative to Co-Mingled, Two Stream is associated with an increase of `r pp(get_term(tidy_2, "collection_typeTwo Stream"))`pp (95% CI: `r pp(get_term(tidy_2, "collection_typeTwo Stream", "conf.low"))` to `r pp(get_term(tidy_2, "collection_typeTwo Stream", "conf.high"))`) and Multi-Stream with an increase of `r pp(get_term(tidy_2, "collection_typeMulti-Stream"))`pp (95% CI: `r pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.low"))` to `r pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.high"))`). Both intervals exclude zero, so both effects are likely real, but both are wide. The Multi-Stream interval spans everything from a barely noticeable 1pp to a substantial 8pp. A fair interpretation of this is that a real effect exists and its likely size is modest, but this dataset cannot pin it down precisely.
 
-There is one apparent discrepancy that we should explain. In the regression, Two Stream differs significantly from Co-Mingled (p = 0.022), whereas Dunn's test found the same comparison borderline (p.adj = 0.051). These are not contradictory. Dunn's raw *p*-value for that pair was 0.026, and the Holm correction for three comparisons roughly doubled it. The regression applies no such correction. The two results agree on the substance: there is a difference of around 3 to 4 percentage points, and the evidence for it is real but not overwhelming.
+There is one apparent discrepancy that we should explain. In the regression, Two Stream differs significantly from Co-Mingled (*p* = `r round(get_term(tidy_2, "collection_typeTwo Stream", "p.value"),3)`), whereas Dunn's test found the same comparison borderline (`p.adj` = `r round(dunn_padj("Co-Mingled","Two Stream"),3)`). These are not contradictory. Dunn's raw *p*-value for that pair was `r round(dunn$p.adj[dunn$group1 == "Co-Mingled" & dunn$group2 == "Two Stream"],3)`, and the Holm correction for three comparisons roughly doubled it. The regression applies no such correction. The two results agree on the substance: there is a difference of around 3 to 4pp, and the evidence for it is real but not overwhelming.
 
-Finally, the model explains very little. The R-squared is 0.05. This means that 95% of the variation in recycling rates between English local authorities lies outside collection system and population entirely.
+Finally, the model explains very little. The R-squared is `r round(glance_2$r.squared, 3)`. This means that `r round((1 - glance_2$r.squared) * 100)`% of the variation in recycling rates between English local authorities lies outside collection system and population entirely.
 
 # Conclusion
 
@@ -262,17 +343,14 @@ Finally, the model explains very little. The R-squared is 0.05. This means that 
 
 The answer has three parts, and they pull in different directions.
 
-**Yes, there is a real difference, and it is not trivial in size.** Authorities that require householders to separate their recycling are associated with higher recycling rates than those that collect everything co-mingled. Adjusting for authority size, the gap is 2.7pp for Two Stream and 4.5pp for Multi-Stream, relative to Co-Mingled. A 4 point shift in the national recycling rate would be a substantial policy outcome, so this is not a difference that can be dismissed as
+**Yes, there is a real difference, and it is not trivial in size.** Authorities that require householders to separate their recycling are associated with higher recycling rates than those that collect everything co-mingled. Adjusting for authority size, the gap is `r pp(get_term(tidy_2, "collection_typeTwo Stream"))`pp for Two Stream and `r pp(get_term(tidy_2, "collection_typeMulti-Stream"))`pp for Multi-Stream, relative to Co-Mingled. A 4pp shift in the national recycling rate would be a substantial policy outcome, so this is not a difference that can be dismissed as
 academic.
 
-**But the effect appears to be a step, not a ladder.** The evidence does not support the intuition that asking householders to sort into ever more streams yields ever higher rates. Two Stream and Multi-Stream authorities are statistically indistinguishable from one another, with a median gap of 0.2pp. What appears to matter is whether households separate their recycling at all, not how finely they separate it. If this interpretation is correct, it has a clear practical implication: the additional burden that Multi-Stream places on householders, relative to Two Stream,
-gives no detectable improvement. This is the most interesting finding in the analysis, and it is also the one held most tentatively, resting as it does on only 40 Multi-Stream authorities.
+**But the effect appears to be a step, not a ladder.** The evidence does not support the intuition that asking householders to sort into ever more streams yields ever higher rates. Two Stream and Multi-Stream authorities are statistically indistinguishable from one another, with a median gap of `r round(dunn_gap("Two Stream","Multi-Stream"),1)`pp. What appears to matter is whether households separate their recycling at all, not how finely they separate it. If this interpretation is correct, it has a clear practical implication: the additional burden that Multi-Stream places on householders, relative to Two Stream, gives no detectable improvement. This is the most interesting finding in the analysis, and it is also the one held most tentatively, resting as it does on only `r n_sys("Multi-Stream")` Multi-Stream authorities.
 
-**And most of what drives recycling rates lies elsewhere.** Collection system explains under 3% of the variation between authorities. Controlling for population raises the figure only to 5%. The other 95% belongs to factors this analysis
-cannot see. A local authority hoping to transform its recycling performance by changing its bin system alone would, on this evidence, be disappointed. The system is one lever among many, and not the largest.
+**And most of what drives recycling rates lies elsewhere.** Collection system explains under `r round(eff$effsize * 100, 1)`% of the variation between authorities. Controlling for population raises the figure only to `r round(glance_2$r.squared * 100, 1)`%. The other `r 100-round(glance_2$r.squared * 100, 1)`% belongs to factors this analysis cannot see. A local authority hoping to transform its recycling performance by changing its bin system alone would, on this evidence, be disappointed. The system is one lever among many, and not the largest.
 
-There are also sound reasons why an authority might choose a system irrespective of its effect on rates. Without access to a Materials Recovery Facility, where co-mingled waste can be mechanically sorted, a council may have little practical alternative to kerbside sorting. The choice of system is constrained by infrastructure, cost and geography, not
-made freely on the basis of expected recycling rate.
+There are also sound reasons why an authority might choose a system irrespective of its effect on rates. Without access to a Materials Recovery Facility, where co-mingled waste can be mechanically sorted, a council may have little practical alternative to kerbside sorting. The choice of system is constrained by infrastructure, cost and geography, not made freely on the basis of expected recycling rate.
 
 ## Data sources and limitations
 
@@ -282,7 +360,7 @@ made freely on the basis of expected recycling rate.
 
 3. **A single year.** All figures relate to 2021. Rates fluctuate, and 2021 was likely affected by altered patterns of household waste generation during the pandemic. A multi-year panel would be more robust and would allow authorities that changed system to be observed before and after, which is a considerably stronger design.
 
-4. **Unequal and small groups.** Only 40 of the 309 authorities operate Multi-Stream systems. Comparisons involving this group have limited statistical power, and the finding that Two Stream and Multi-Stream cannot be distinguished may reflect that limitation rather than a true absence of difference.
+4. **Unequal and small groups.** Only `r n_sys("Multi-Stream")` of the `r nrow(recycling)` authorities operate Multi-Stream systems. Comparisons involving this group have limited statistical power, and the finding that Two Stream and Multi-Stream cannot be distinguished may reflect that limitation rather than a true absence of difference.
 
 5. **System classification.** Collection system data was obtained by Freedom of Information request and reflects the system in place at the time of response. Authorities operating hybrid or transitional arrangements are assigned to a single category, which introduces some measurement error.
 
