@@ -5,6 +5,7 @@ author: "Clare Gibson"
 date: today
 format:
   html:
+    output-file: index.html
     theme: [cosmo, custom.scss]
     toc: true
     toc-location: left
