@@ -1,6 +1,6 @@
 # UK Recycling
 
-Do councils who employ a kerbside sort system achieve higher recycling rates than those who employ the co-mingled system?
+Does the collection system have a meaningful impact on recycling rate?
 
 ## Description
 

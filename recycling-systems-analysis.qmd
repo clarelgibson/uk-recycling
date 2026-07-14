@@ -1,11 +1,10 @@
 ---
 title: "Comparison of Recycling Systems in England"
-subtitle: "Does the collection system have a meaningful impact on recycling rates?"
+subtitle: "Does the collection system have a meaningful impact on recycling rate?"
 author: "Clare Gibson"
 date: today
 format:
   html:
-    logo: img/dt-logo.svg
     theme: [cosmo, custom.scss]
     toc: true
     toc-location: left
@@ -24,9 +23,11 @@ execute:
   message: false
 ---
 
+![](img/dt-logo.svg){.dt-logo fig-alt="Data Translator logo"}
+
 # Introduction
 
-This paper sets out to answer the question: **Does the collection system have a meaningful impact on recycling rates?**
+This paper sets out to answer the question: **Does the collection system have a meaningful impact on recycling rate?**
 
 Local authorities in England can elect to use one of three collection systems for household recycling:
 
@@ -52,8 +53,13 @@ library(moments)
 library(rstatix)
 library(broom)
 library(showtext)
-source(here("R/theme_datatranslator.R"))
+```
 
+``` {r source-code}
+source(here("R/theme_datatranslator.R"))
+```
+
+``` {r set-typography}
 font_add_google("Work Sans", "Work Sans")
 font_add_google("Roboto Mono", "Roboto Mono")
 showtext_auto()
@@ -100,7 +106,7 @@ plot_distribution <- function(data, yvar, title, scale = c("none", "percent", "t
     theme(
       panel.grid.major.y = element_blank(),
       panel.grid.minor   = element_blank(),
-      plot.background = element_rect(fill = "#ECF0F4"),
+      plot.background = element_rect(fill = "#ECF0F4")
     )
 
   if (scale == "percent") {
@@ -149,7 +155,7 @@ Before we run a significance test, let's view both the number of local authoriti
 ## Breakdown of collection systems
 ```{r}
 #| label: fig-collection-systems
-#| fig-cap: "Breakdown of local authorities by recycling collection system"
+#| fig-cap: "Count of local authorities by collection system. Group sizes are markedly uneven, which informs the choice of statistical test."
 
 ggplot(recycling, aes(collection_type, fill = collection_type)) +
 geom_bar() +

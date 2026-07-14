@@ -42,3 +42,9 @@ figcaption, caption {
   color: $dt-teal;
   font-size: 0.9rem;
 }
+
+.dt-logo img,
+img.dt-logo {
+  width: 75px;
+  margin-bottom: 1.5rem;
+}
