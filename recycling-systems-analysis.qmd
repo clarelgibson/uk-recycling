@@ -2,6 +2,26 @@
 title: "Comparison of Recycling Systems in England"
 subtitle: "Does the collection system have a meaningful impact on recycling rates?"
 author: "Clare Gibson"
+date: today
+format:
+  html:
+    logo: img/dt-logo.svg
+    theme: [cosmo, custom.scss]
+    toc: true
+    toc-location: left
+    toc-depth: 3
+    code-fold: true
+    code-summary: "Show code"
+    code-tools: true
+    embed-resources: true
+    fig-align: center
+    include-in-header:
+      text: |
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,300;0,600;1,300&family=Roboto+Mono:wght@600&display=swap" rel="stylesheet">
+execute:
+  warning: false
+  message: false
 ---
 
 # Introduction
@@ -24,18 +44,25 @@ In this analysis, we set the threshold for statistical significance at *p* < 0.0
 
 # Setup
 ## Load required packages
-```{r load-packages, message=FALSE, warning=FALSE}
+```{r load-packages}
 library(here)
 library(tidyverse)
 library(knitr)
 library(moments)
 library(rstatix)
 library(broom)
+library(showtext)
+source(here("R/theme_datatranslator.R"))
+
+font_add_google("Work Sans", "Work Sans")
+font_add_google("Roboto Mono", "Roboto Mono")
+showtext_auto()
+showtext_opts(dpi = 96)
 ```
 
 ## Import the recycling data
 
-```{r import-data, message=FALSE, warning=FALSE}
+```{r import-data}
 recycling <- 
   read_csv(here("data/cln/data_recycling_system.csv")) |> 
   # reorder factor levels to assist with plotting
@@ -43,7 +70,7 @@ recycling <-
     collection_type = fct_reorder(collection_type, household_recycle_rate)
   )
 
-glimpse(recycling)
+head(recycling) |> kable()
 ```
 
 The dataset includes information about household recycling for `r nrow(recycling)` local authorities in England in 2021. It contains the unique code and name of each authority, the population of the authority in 2021, the type of collection system in place in 2021, the amount of household waste collected and recycled in 2021 (in tonnes) and the household recycling rate.
@@ -53,27 +80,40 @@ The dataset includes information about household recycling for `r nrow(recycling
 The chunk below contains code to support consistent plotting.
 
 ```{r plotting-summarising-code}
+
 # We'll be creating a number of similar plots, so we can wrap the code into a function
-plot_distribution <- function(data, yvar, ylab, percent = FALSE) {
+plot_distribution <- function(data, yvar, title, scale = c("none", "percent", "thousands")) {
+  scale <- match.arg(scale)
+
   p <- ggplot(data, aes(x = collection_type, y = {{ yvar }})) +
     geom_violin(aes(fill = collection_type, colour = collection_type),
                 linewidth = 1, alpha = 0.5) +
     geom_boxplot(outlier.alpha = 0, coef = 0,
-                 colour = "grey40", width = 0.2) +
-    stat_summary(fun = mean, geom = "point", shape = 18, size = 3) +
+                 colour = dt_navy, width = 0.2) +
+    stat_summary(fun = mean, geom = "point", shape = 18, size = 3,
+                 colour = dt_navy) +
     coord_flip() +
-    scale_colour_brewer(palette = "Dark2", guide = "none") +
-    scale_fill_brewer(palette = "Dark2", guide = "none") +
-    labs(
-      x = "Collection system",
-      y = ylab
+    scale_colour_dt(guide = "none") +
+    scale_fill_dt(guide = "none") +
+    labs(x = NULL, y = NULL, title = title) +
+    theme_dt() +
+    theme(
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor   = element_blank(),
+      plot.background = element_rect(fill = "#ECF0F4"),
     )
 
-  if (percent) p <- p + scale_y_continuous(labels = scales::percent)
+  if (scale == "percent") {
+    p <- p + scale_y_continuous(labels = scales::percent)
+  }
+  if (scale == "thousands") {
+    p <- p + scale_y_continuous(labels = scales::label_number(scale = 1e-3))
+  }
 
   p
 }
 
+# Helper to set format and structure of stats summaries
 summarise_distribution <- function(data, yvar) {
   data |>
     group_by(collection_type) |>
@@ -111,17 +151,25 @@ Before we run a significance test, let's view both the number of local authoriti
 #| label: fig-collection-systems
 #| fig-cap: "Breakdown of local authorities by recycling collection system"
 
-fig_1 <- 
-  ggplot(recycling, aes(collection_type, fill = collection_type)) +
-  geom_bar() +
-  geom_text(stat = "count", aes(label = after_stat(count)), vjust = -0.5) +
-  labs(
-    x = "Collection system",
-    y = "Number of local authorities"
-  ) +
-  scale_fill_brewer(palette = "Dark2", guide = "none")
-
-fig_1
+ggplot(recycling, aes(collection_type, fill = collection_type)) +
+geom_bar() +
+geom_text(stat = "count", aes(label = after_stat(count)), 
+          vjust = -0.5, family = "Work Sans", colour = dt_navy) +
+scale_fill_dt(guide = "none") +
+scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+labs(
+  x = NULL,
+  y = NULL,
+  title = "Count of local authorities by recycling collection system"
+) +
+theme_dt() +
+theme(
+  axis.text.y  = element_blank(),
+  axis.ticks.y = element_blank(),
+  plot.background = element_rect(fill = "#ECF0F4"),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank()
+)
 ```
 
 The bar chart in @fig-collection-systems shows that the group sizes are uneven. `r n_sys("Co-Mingled")` (`r pct_sys("Co-Mingled")`%) authorities use a Co-Mingled system, `r n_sys("Two Stream")` (`r pct_sys("Two Stream")`%) use a Two Stream system and `r n_sys("Multi-Stream")` (`r pct_sys("Multi-Stream")`%) use a Multi-Stream system.
@@ -131,15 +179,12 @@ The bar chart in @fig-collection-systems shows that the group sizes are uneven. 
 #| label: fig-recycle-rate
 #| fig-cap: "Distribution of household recycling rates by collection system. The box shows the median and interquartile range; the diamond shows the mean."
 
-fig_2 <- 
-  plot_distribution(
-    recycling,
-    household_recycle_rate,
-    ylab = "Household recycling rate",
-    percent = TRUE
-  )
-
-fig_2
+plot_distribution(
+  recycling,
+  household_recycle_rate,
+  title = "Distribution of recycling rates by collection system",
+  scale = "percent"
+)
 ```
 
 ```{r}
@@ -157,16 +202,14 @@ The raw volumes of household waste recycled by local authority are heavily right
 
 ```{r}
 #| label: fig-household-collected
-#| fig-cap: "Distribution of household waste collected by collection system. The box shows the median and interquartile range; the diamond shows the mean."
+#| fig-cap: "Distribution of household waste collected by collection system. Values are in thousands of tonnes. The box shows the median and interquartile range; the diamond shows the mean."
 
-fig_3 <- 
-  plot_distribution(
-    recycling,
-    household_collected,
-    ylab = "Household waste collected (tonnes)"
-  )
-
-fig_3
+plot_distribution(
+  recycling,
+  household_collected,
+  title = "Distribution of household waste collected by collection system",
+  scale = "thousands"
+)
 ```
 
 ```{r}
@@ -178,17 +221,14 @@ summarise_distribution(recycling, household_collected) |> kable(digits = 3)
 
 ```{r}
 #| label: fig-household-recycled
-#| fig-cap: "Distribution of household waste recycled by collection system. The box shows the median and interquartile range; the diamond shows the mean."
+#| fig-cap: "Distribution of household waste recycled by collection system. Values are in thousands of tonnes. The box shows the median and interquartile range; the diamond shows the mean."
 
-
-fig_4 <- 
-  plot_distribution(
-    recycling,
-    household_recycled,
-    ylab = "Household waste recycled (tonnes)"
-  )
-
-fig_4
+plot_distribution(
+  recycling,
+  household_recycled,
+  title = "Distribution of household waste recycled by collection system",
+  scale = "thousands"
+)
 ```
 
 ```{r}
@@ -332,7 +372,7 @@ Firstly, the system effect was robust to authority size. The collection type coe
 
 Secondly, larger authorities recycle less. The coefficient on `log(population)` is `r round(get_term(tidy_2, "log(population)"), 3)` (*p* = `r round(get_term(tidy_2, "log(population)", "p.value"), 3)`), which corresponds to a fall of roughly `r abs(pp(get_term(tidy_2, "log(population)") * log(2)))`pp in the recycling rate for each doubling of population. This is a modest but real association, and it is independent of the collection system in use.
 
-The confidence intervals are more informative than the *p*-values. Relative to Co-Mingled, Two Stream is associated with an increase of `r pp(get_term(tidy_2, "collection_typeTwo Stream"))`pp (95% CI: `r pp(get_term(tidy_2, "collection_typeTwo Stream", "conf.low"))` to `r pp(get_term(tidy_2, "collection_typeTwo Stream", "conf.high"))`) and Multi-Stream with an increase of `r pp(get_term(tidy_2, "collection_typeMulti-Stream"))`pp (95% CI: `r pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.low"))`pp to `r pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.high"))`pp). Both intervals exclude zero, so both effects are likely real, but both are wide. The Multi-Stream interval spans everything from a barely noticeable `r round(pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.low")))`pp to a substantial `r round(pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.high")))`pp. A fair interpretation of this is that a real effect exists and its likely size is modest, but this dataset cannot pin it down precisely.
+The confidence intervals are more informative than the *p*-values. Relative to Co-Mingled, Two Stream is associated with an increase of `r pp(get_term(tidy_2, "collection_typeTwo Stream"))`pp (95% CI: `r pp(get_term(tidy_2, "collection_typeTwo Stream", "conf.low"))`pp to `r pp(get_term(tidy_2, "collection_typeTwo Stream", "conf.high"))`pp) and Multi-Stream with an increase of `r pp(get_term(tidy_2, "collection_typeMulti-Stream"))`pp (95% CI: `r pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.low"))`pp to `r pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.high"))`pp). Both intervals exclude zero, so both effects are likely real, but both are wide. The Multi-Stream interval spans everything from a barely noticeable `r round(pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.low")))`pp to a substantial `r round(pp(get_term(tidy_2, "collection_typeMulti-Stream", "conf.high")))`pp. A fair interpretation of this is that a real effect exists and its likely size is modest, but this dataset cannot pin it down precisely.
 
 There is one apparent discrepancy that we should explain. In the regression, Two Stream differs significantly from Co-Mingled (*p* = `r round(get_term(tidy_2, "collection_typeTwo Stream", "p.value"),3)`), whereas Dunn's test found the same comparison borderline (`p.adj` = `r round(dunn_padj("Co-Mingled","Two Stream"),3)`). These are not contradictory. Dunn's raw *p*-value for that pair was `r round(dunn_p("Co-Mingled","Two Stream"),3)`, and the Holm correction for three comparisons roughly doubled it. The regression applies no such correction. The two results agree on the substance: there is a difference of around 3 to 4pp, and the evidence for it is real but not overwhelming.
 

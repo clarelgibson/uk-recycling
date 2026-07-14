@@ -1,0 +1,44 @@
+/*-- scss:defaults --*/
+
+$dt-navy:   #202C39;
+$dt-grey:   #ECF0F4;
+$dt-teal:   #55868C;
+$dt-coral:  #FF4F5C;
+$dt-border: #DCE1E7;
+
+$body-bg:     $dt-grey;
+$body-color:  $dt-navy;
+$link-color:  $dt-coral;
+
+$font-family-sans-serif: "Work Sans", sans-serif;
+$font-family-monospace:  "Roboto Mono", monospace;
+$headings-font-family:   "Roboto Mono", monospace;
+$headings-font-weight:   600;
+$font-weight-base:       300;
+
+$code-bg:            #FFFFFF;
+$code-color:         $dt-navy;
+$table-border-color: $dt-border;
+
+/*-- scss:rules --*/
+
+body { font-weight: 300; }
+b, strong { font-weight: 600; }
+
+a {
+  color: $dt-navy;
+  text-decoration: none;
+  box-shadow: 0 1px 0 $dt-coral;
+}
+a:hover { color: $dt-coral; }
+
+table { background: #FFFFFF; }
+thead th {
+  font-family: "Roboto Mono", monospace;
+  border-bottom: 2px solid $dt-teal;
+}
+
+figcaption, caption {
+  color: $dt-teal;
+  font-size: 0.9rem;
+}
