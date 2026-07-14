@@ -129,7 +129,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(moments)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rstatix)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rstatix)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(broom)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="import-the-recycling-data" class="level2">
@@ -470,7 +471,7 @@ Kruskal-Wallis chi-squared = 9.8269, df = 2, p-value = 0.007347</code></pre>
 </section>
 <section id="dunns-test" class="level2">
 <h2 class="anchored" data-anchor-id="dunns-test">Dunn’s test</h2>
-<p>Finally, we can run Dunn’s test to see which of the collection types show a significant difference in terms of recycling rates.</p>
+<p>Finally, we can run Dunn’s test to test the collection systems in a pairwise manner, which allows us to see whether any one of them show a significant difference in recycling rate compared to another system.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>dunn <span class="ot">&lt;-</span> recycling <span class="sc">|&gt;</span> </span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dunn_test</span>(household_recycle_rate <span class="sc">~</span> collection_type,</span>
@@ -545,8 +546,238 @@ Kruskal-Wallis chi-squared = 9.8269, df = 2, p-value = 0.007347</code></pre>
 <p>Dunn’s test found adjusted p-values of 0.051, 0.018 and 0.251.</p>
 </section>
 </section>
+<section id="controlling-for-authority-size" class="level1">
+<h1>Controlling for authority size</h1>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>mod_1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(household_recycle_rate <span class="sc">~</span> collection_type, <span class="at">data =</span> recycling)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>mod_2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(household_recycle_rate <span class="sc">~</span> collection_type <span class="sc">+</span> <span class="fu">log</span>(population), <span class="at">data =</span> recycling)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="fu">tidy</span>(mod_2, <span class="at">conf.int =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 10%">
+<col style="width: 11%">
+<col style="width: 11%">
+<col style="width: 9%">
+<col style="width: 10%">
+<col style="width: 11%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">term</th>
+<th style="text-align: right;">estimate</th>
+<th style="text-align: right;">std.error</th>
+<th style="text-align: right;">statistic</th>
+<th style="text-align: right;">p.value</th>
+<th style="text-align: right;">conf.low</th>
+<th style="text-align: right;">conf.high</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">(Intercept)</td>
+<td style="text-align: right;">0.6733</td>
+<td style="text-align: right;">0.1054</td>
+<td style="text-align: right;">6.3858</td>
+<td style="text-align: right;">0.0000</td>
+<td style="text-align: right;">0.4658</td>
+<td style="text-align: right;">0.8808</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">collection_typeTwo Stream</td>
+<td style="text-align: right;">0.0272</td>
+<td style="text-align: right;">0.0118</td>
+<td style="text-align: right;">2.3100</td>
+<td style="text-align: right;">0.0216</td>
+<td style="text-align: right;">0.0040</td>
+<td style="text-align: right;">0.0504</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">collection_typeMulti-Stream</td>
+<td style="text-align: right;">0.0451</td>
+<td style="text-align: right;">0.0168</td>
+<td style="text-align: right;">2.6745</td>
+<td style="text-align: right;">0.0079</td>
+<td style="text-align: right;">0.0119</td>
+<td style="text-align: right;">0.0782</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">log(population)</td>
+<td style="text-align: right;">-0.0223</td>
+<td style="text-align: right;">0.0088</td>
+<td style="text-align: right;">-2.5315</td>
+<td style="text-align: right;">0.0119</td>
+<td style="text-align: right;">-0.0397</td>
+<td style="text-align: right;">-0.0050</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glance</span>(mod_2) <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 13%">
+<col style="width: 6%">
+<col style="width: 9%">
+<col style="width: 7%">
+<col style="width: 2%">
+<col style="width: 8%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 8%">
+<col style="width: 11%">
+<col style="width: 4%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">r.squared</th>
+<th style="text-align: right;">adj.r.squared</th>
+<th style="text-align: right;">sigma</th>
+<th style="text-align: right;">statistic</th>
+<th style="text-align: right;">p.value</th>
+<th style="text-align: right;">df</th>
+<th style="text-align: right;">logLik</th>
+<th style="text-align: right;">AIC</th>
+<th style="text-align: right;">BIC</th>
+<th style="text-align: right;">deviance</th>
+<th style="text-align: right;">df.residual</th>
+<th style="text-align: right;">nobs</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.0498</td>
+<td style="text-align: right;">0.0404</td>
+<td style="text-align: right;">0.0951</td>
+<td style="text-align: right;">5.327</td>
+<td style="text-align: right;">0.0014</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">290.6516</td>
+<td style="text-align: right;">-571.3031</td>
+<td style="text-align: right;">-552.6364</td>
+<td style="text-align: right;">2.7572</td>
+<td style="text-align: right;">305</td>
+<td style="text-align: right;">309</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tidy</span>(mod_1, <span class="at">conf.int =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 10%">
+<col style="width: 11%">
+<col style="width: 11%">
+<col style="width: 9%">
+<col style="width: 10%">
+<col style="width: 11%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">term</th>
+<th style="text-align: right;">estimate</th>
+<th style="text-align: right;">std.error</th>
+<th style="text-align: right;">statistic</th>
+<th style="text-align: right;">p.value</th>
+<th style="text-align: right;">conf.low</th>
+<th style="text-align: right;">conf.high</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">(Intercept)</td>
+<td style="text-align: right;">0.4071</td>
+<td style="text-align: right;">0.0077</td>
+<td style="text-align: right;">53.1791</td>
+<td style="text-align: right;">0.0000</td>
+<td style="text-align: right;">0.3920</td>
+<td style="text-align: right;">0.4221</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">collection_typeTwo Stream</td>
+<td style="text-align: right;">0.0252</td>
+<td style="text-align: right;">0.0119</td>
+<td style="text-align: right;">2.1213</td>
+<td style="text-align: right;">0.0347</td>
+<td style="text-align: right;">0.0018</td>
+<td style="text-align: right;">0.0485</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">collection_typeMulti-Stream</td>
+<td style="text-align: right;">0.0465</td>
+<td style="text-align: right;">0.0170</td>
+<td style="text-align: right;">2.7361</td>
+<td style="text-align: right;">0.0066</td>
+<td style="text-align: right;">0.0131</td>
+<td style="text-align: right;">0.0799</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glance</span>(mod_1) <span class="sc">|&gt;</span> <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 13%">
+<col style="width: 6%">
+<col style="width: 9%">
+<col style="width: 7%">
+<col style="width: 2%">
+<col style="width: 8%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 8%">
+<col style="width: 11%">
+<col style="width: 4%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">r.squared</th>
+<th style="text-align: right;">adj.r.squared</th>
+<th style="text-align: right;">sigma</th>
+<th style="text-align: right;">statistic</th>
+<th style="text-align: right;">p.value</th>
+<th style="text-align: right;">df</th>
+<th style="text-align: right;">logLik</th>
+<th style="text-align: right;">AIC</th>
+<th style="text-align: right;">BIC</th>
+<th style="text-align: right;">deviance</th>
+<th style="text-align: right;">df.residual</th>
+<th style="text-align: right;">nobs</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.0298</td>
+<td style="text-align: right;">0.0235</td>
+<td style="text-align: right;">0.0959</td>
+<td style="text-align: right;">4.7032</td>
+<td style="text-align: right;">0.0097</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">287.4389</td>
+<td style="text-align: right;">-566.8779</td>
+<td style="text-align: right;">-551.9445</td>
+<td style="text-align: right;">2.8152</td>
+<td style="text-align: right;">306</td>
+<td style="text-align: right;">309</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
 <section id="interim-findings" class="level1">
 <h1>Interim findings</h1>
+<p>Dunn’s test shows that only one pair differs to a statistically significant degree after correction for multiple comparisons: Co-Mingled authorities are associated with lower recycling rates than Multi-Stream authorities (p.adj = 0.018), with a median gap of 4.2 percentage points.</p>
+<p>The other two comparisons are more nuanced. Two Stream sits between the two, but cannot be reliably distinguished from either. The Co-Mingled versus Two Stream comparison narrowly misses the conventional threshold (p.adj = 0.051) despite a median gap of 4.0 percentage points, which is comparable in size to the significant result above; the evidence is suggestive but not conclusive. By contrast, the Two Stream versus Multi-Stream comparison shows both a non-significant result and a negligible median gap of 0.2 percentage points, which points more positively towards there being no real difference between them.</p>
+<p>Taken together, the pattern is consistent with the burden of separation mattering only at the first step, from mixing everything to separating into just two stream, with little further gain from separating into more streams. The data support this reading but do not establish it, and the small number of Multi-Stream authorities (40) limits the power to detect modest differences.</p>
 </section>
 <section id="limitations" class="level1">
 <h1>Limitations</h1>
