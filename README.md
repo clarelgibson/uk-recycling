@@ -2,6 +2,8 @@
 
 Does the collection system have a meaningful impact on recycling rate?
 
+[Go to analysis](https://clarelgibson.github.io/uk-recycling/)
+
 ## Description
 
 This project will explore the answer to the question above. Kerbside sort recycling systems place a high burden on the householder to sort and store their waste in up to seven bins, but does this system achieve higher recycling rates than the alternative, co-mingled system, where all recyclable waste is put into a single bin and sorted off-site?
@@ -26,7 +28,3 @@ The links above go to the original source location of the data. Should the links
 ## Licence
 
 This project is licensed under the CC0 1.0 Universal licence. See the [LICENSE](./LICENSE) file for details.
-
-## Acknowledgements
-
--   List any reference material used in this project.
