@@ -1,20 +1,26 @@
 ---
 title: "Comparison of Recycling Systems in England"
-subtitle: "Does the recycling system have a meaningful impact on recycling rates?"
+subtitle: "Does the collection system have a meaningful impact on recycling rates?"
 author: "Clare Gibson"
 ---
 
 # Introduction
 
-This paper sets out to answer the question: **Does the recycling system have a meaningful impact on recycling rates?**
+This paper sets out to answer the question: **Does the collection system have a meaningful impact on recycling rates?**
 
-Local authorities in England can elect to use one of three collection types for household recycling:
+Local authorities in England can elect to use one of three collection systems for household recycling:
 
 - **Co-Mingled:** all non-organic recyclable material is put into a single bin by the householder
 - **Two Stream:** non-organic recyclable material must be sorted into two bins by the householder (e.g. one bin for glass and metal, and a second bin for paper, card and plastic)
 - **Multi-Stream:** householders sort their non-organic recyclable material into separate bins for each type of material
 
-Multi-Stream systems place a higher burden on the householder, so this paper seeks to investigate whether this higher burden results in higher recycling rates.
+Multi-Stream systems place a higher burden on the householder, so this paper asks whether that higher burden is associated with higher recycling rates, and whether any difference is large enough to matter in practice.
+
+The word "meaningful" in the research question is important. A difference in recycling rates can be statistically detectable without being practically meaningful, particularly with a sample of 309 authorities. This analysis therefore reports not only whether the systems differ, but by how much, and with how much confidence.
+
+A note on causation: local authorities choose their own collection systems. Therefore, this is observational data and not a randomised experiment. Throughout this paper the language is deliberately one of association rather than cause.
+
+In this analysis, we set the threshold for statistical significance at *p* < 0.05.
 
 # Setup
 ## Load required packages
@@ -171,7 +177,9 @@ kw <- kruskal.test(household_recycle_rate ~ collection_type, data = recycling)
 kw
 ```
 
-The test returns H = `r round(kw$statistic, 2)` on `r kw$parameter` degrees of freedom, p = `r round(kw$p.value, 3)`, so at least one system differs significantly.
+The test returns H = `r round(kw$statistic, 2)` on `r kw$parameter` degrees of freedom, p = `r round(kw$p.value, 3)`. At least one collection system therefore differs from the others to a statistically significant degree.
+
+This tells us that a difference exists somewhere, but not where, and not how large. Both of those questions matter more than the first.
 
 ## Effect size
 
@@ -182,7 +190,7 @@ eff <- recycling |> kruskal_effsize(household_recycle_rate ~ collection_type)
 eff |> kable(digits = 3)
 ```
 
-Eta-squared is `r round(eff$effsize, 3)`, meaning collection system explains under `r round(eff$effsize * 100, 1)`% of the variation in recycling rates.
+Eta-squared is `r round(eff$effsize, 3)`, meaning collection system accounts for under `r round(eff$effsize * 100, 1)` per cent of the variation in recycling rates between local authorities. By the conventional thresholds (0.01 small, 0.06 medium, 0.14 large) this is a small effect. This means that the collection system is not the biggest contributor to the recycling rate.
 
 ## Dunn's test
 
@@ -197,9 +205,31 @@ dunn |>
   kable(digits = 3)
 ```
 
-Dunn's test found adjusted p-values of `r round(dunn$p.adj[1], 3)`, `r round(dunn$p.adj[2], 3)` and `r round(dunn$p.adj[3], 3)`.
+The Kruskal-Wallis test is an omnibus test: it reports that some difference exists without identifying which systems differ. Dunn's test makes the three pairwise comparisons, using the same pooled ranks. Because running three tests inflates the chance of a false positive, the *p*-values are adjusted using the Holm correction, and it is the adjusted values (p.adj in the table above) that should be interpreted.
+
+Only one pair differs significantly after correction. Co-Mingled authorities are associated with lower recycling rates than Multi-Stream authorities (p.adj = `r round(dunn$p.adj[2], 3)`), a median gap of 4.2pp.
+
+The other two comparisons are more nuanced. The Co-Mingled versus Two Stream comparison narrowly misses our stated
+threshold for significance (p.adj = `r round(dunn$p.adj[1], 3)`), and yet the median gap is 4.0pp, which is comparable
+in size to the significant result above. The evidence here is suggestive but not conclusive.
+
+The Two Stream versus Multi-Stream comparison is different. It is not significant (p.adj = `r round(dunn$p.adj[3], 3)`) and the median gap is a negligible 0.2pp. Here both the test and the estimate point the same way, towards there being little or no real difference between the two.
+
+Taken together, the pattern is consistent with the burden of separation mattering mainly at the first step, going from mixing everything into one bin to any kind of separation, with little further gain from separating into more streams. The data support this interpretation but do not establish it. With only 40 Multi-Stream authorities, this analysis
+has limited power to detect modest differences.
 
 # Controlling for authority size
+
+Significance testing has now been taken about as far as it can usefully go. Every result has been interpreted as either significant or not significant, with one landing almost exactly on the threshold. We now have two further questions to answer.
+
+Firstly, how large is each difference, and how certain are we? We can answer this question with regression by reporting effect estimates with confidence intervals, which say more than a *p*-value alone.
+
+Secondly, is the collection system really doing the work? If Multi-Stream authorities happen to be systematically smaller, then what looks like a system effect may be a size effect in disguise. This is an example of a confounding variable. Regression addresses this by comparing systems among authorities of similar size, holding size constant.
+
+Population is used on a log scale. As the volume distributions above showed, authority size is heavily right-skewed, with a long tail of very large councils. Logging the variable means the model reads proportional differences in size, such as a doubling of population, rather than treating each additional resident as equivalent whether it is
+the two-thousandth or the millionth.
+
+Co-Mingled is the reference level, so each coefficient represents the difference in recycling rate relative to a Co-Mingled authority. Because the recycling rate is a proportion, a coefficient of 0.04 corresponds to 4pp.
 
 ```{r regression-analysis}
 mod_1 <- lm(household_recycle_rate ~ collection_type, data = recycling)
@@ -212,17 +242,53 @@ tidy(mod_1, conf.int = TRUE) |> kable(digits = 4)
 glance(mod_1) |> kable(digits = 4)
 ```
 
+## Interpreting the regression models
 
-# Interim findings
+The regression analysis showed two results.
 
-Dunn's test shows that only one pair differs to a statistically significant degree after correction for multiple comparisons: Co-Mingled authorities are associated with lower recycling rates than Multi-Stream authorities (p.adj = `r round(dunn$p.adj[2], 3)`), with a median gap of 4.2 percentage points.
+Firstly, the system effect was robust to authority size. The collection type coefficients barely changed when population was factored in: Two Stream moved from +2.5pp to +2.7pp, and Multi-Stream from +4.7pp to +4.5pp. If size had been confounding the comparison, these would have reduced materially. The association between collection system and recycling rate is not an artefact of larger or smaller councils favouring particular systems.
 
-The other two comparisons are more nuanced. Two Stream sits between the two, but cannot be reliably distinguished from either. The Co-Mingled versus Two Stream comparison narrowly misses the conventional threshold (p.adj = `r round(dunn$p.adj[1], 3)`) despite a median gap of 4.0 percentage points, which is comparable in size to the significant result above; the evidence is suggestive but not conclusive. By contrast, the Two Stream versus Multi-Stream comparison shows both a non-significant result and a negligible median gap of 0.2 percentage points, which points more positively towards there being no real difference between them.
+Secondly, larger authorities recycle less. The coefficient on log(population) is -0.022 (p = 0.012), which corresponds to a fall of roughly 1.5pp in the recycling rate for each doubling of population. This is a modest but real association, and it is independent of the collection system in use.
 
-Taken together, the pattern is consistent with the burden of separation mattering only at the first step, from mixing everything to separating into just two stream, with little further gain from separating into more streams. The data support this reading but do not establish it, and the small number of Multi-Stream authorities (40) limits the power to detect modest differences.
+The confidence intervals are more informative than the *p*-values. Relative to Co-Mingled, Two Stream is associated with an increase of 2.7pp (95% CI: 0.4 to 5.0) and Multi-Stream with an increase of 4.5pp (95% CI: 1.2 to 7.8). Both intervals exclude zero, so both effects are likely real, but both are wide. The Multi-Stream interval spans everything from a barely noticeable 1 point to a substantial 8 points. A fair interpretation of this is that a real effect exists and its likely size is modest, but this dataset cannot pin it down precisely.
 
-# Limitations
+There is one apparent discrepancy that we should explain. In the regression, Two Stream differs significantly from Co-Mingled (p = 0.022), whereas Dunn's test found the same comparison borderline (p.adj = 0.051). These are not contradictory. Dunn's raw *p*-value for that pair was 0.026, and the Holm correction for three comparisons roughly doubled it. The regression applies no such correction. The two results agree on the substance: there is a difference of around 3 to 4 percentage points, and the evidence for it is real but not overwhelming.
 
-[FURTHER CONCLUSIONS HERE]
+Finally, the model explains very little. The R-squared is 0.05. This means that 95% of the variation in recycling rates between English local authorities lies outside collection system and population entirely.
 
-That being said, there are other reasons that a local authority may choose a Multi-Stream system over a Co-Mingled one. The lack of a Materials Recovery Facility, where co-mingled waste can be sorted by machine, may force certain LAs to opt for kerbside sort.
+# Conclusion
+
+**Does the collection system have a meaningful impact on recycling rates?**
+
+The answer has three parts, and they pull in different directions.
+
+**Yes, there is a real difference, and it is not trivial in size.** Authorities that require householders to separate their recycling are associated with higher recycling rates than those that collect everything co-mingled. Adjusting for authority size, the gap is 2.7pp for Two Stream and 4.5pp for Multi-Stream, relative to Co-Mingled. A 4 point shift in the national recycling rate would be a substantial policy outcome, so this is not a difference that can be dismissed as
+academic.
+
+**But the effect appears to be a step, not a ladder.** The evidence does not support the intuition that asking householders to sort into ever more streams yields ever higher rates. Two Stream and Multi-Stream authorities are statistically indistinguishable from one another, with a median gap of 0.2pp. What appears to matter is whether households separate their recycling at all, not how finely they separate it. If this interpretation is correct, it has a clear practical implication: the additional burden that Multi-Stream places on householders, relative to Two Stream,
+gives no detectable improvement. This is the most interesting finding in the analysis, and it is also the one held most tentatively, resting as it does on only 40 Multi-Stream authorities.
+
+**And most of what drives recycling rates lies elsewhere.** Collection system explains under 3% of the variation between authorities. Controlling for population raises the figure only to 5%. The other 95% belongs to factors this analysis
+cannot see. A local authority hoping to transform its recycling performance by changing its bin system alone would, on this evidence, be disappointed. The system is one lever among many, and not the largest.
+
+There are also sound reasons why an authority might choose a system irrespective of its effect on rates. Without access to a Materials Recovery Facility, where co-mingled waste can be mechanically sorted, a council may have little practical alternative to kerbside sorting. The choice of system is constrained by infrastructure, cost and geography, not
+made freely on the basis of expected recycling rate.
+
+## Data sources and limitations
+
+1. **Observational, not experimental.** Local authorities chose their own collection systems. Any of the associations reported here could reflect the kind of authority that adopts a given system rather than the system itself. Nothing in this analysis establishes cause.
+
+2. **Residual confounding is likely.** The only control available in this dataset is population. The factors that the recycling literature would flag most strongly are absent: deprivation, rural versus urban character, and housing stock. Housing type in particular is a known driver, since flats recycle markedly less well than houses whatever bins are provided, and it is plausibly correlated with the choice of system. The regression should therefore be read as adjusting for authority size only.
+
+3. **A single year.** All figures relate to 2021. Rates fluctuate, and 2021 was likely affected by altered patterns of household waste generation during the pandemic. A multi-year panel would be more robust and would allow authorities that changed system to be observed before and after, which is a considerably stronger design.
+
+4. **Unequal and small groups.** Only 40 of the 309 authorities operate Multi-Stream systems. Comparisons involving this group have limited statistical power, and the finding that Two Stream and Multi-Stream cannot be distinguished may reflect that limitation rather than a true absence of difference.
+
+5. **System classification.** Collection system data was obtained by Freedom of Information request and reflects the system in place at the time of response. Authorities operating hybrid or transitional arrangements are assigned to a single category, which introduces some measurement error.
+
+## Further work
+
+- Test Two Stream against Multi-Stream directly by releveling the factor, rather than inferring it from two comparisons against a shared reference.
+- Join contextual variables (deprivation, rural or urban classification, housing type) and re-fit the model. If the system effect survives these controls, the finding is considerably stronger.
+- Use those contextual variables to construct peer groups of comparable authorities through cluster analysis, deliberately excluding both the recycling rate and the collection system, and then compare systems within peer groups. This controls for confounding by stratification.
+- Extend to multiple years to exploit authorities that changed system.
