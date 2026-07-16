@@ -172,4 +172,6 @@ ruc_cln <- ruc_src |>
   # Convert rurality to decimal percent
   mutate(
     rurality = rurality / 100
-  )
+  ) |> 
+  # Keep only LADs in England
+  filter(grepl("^E", lad21cd))
