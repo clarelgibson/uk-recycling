@@ -22,6 +22,10 @@ data <-
             by = "lad21cd") %>% 
   left_join(shp_cln,
             by = "lad21cd") %>% 
+  left_join(dep_cln,
+            by = "lad21cd") |> 
+  left_join(ruc_cln,
+            by = "lad21cd") |> 
   select(-geometry) %>% 
   replace_na(
     list(
@@ -43,6 +47,9 @@ data_recycling_system <-
     lad21cd,
     local_authority,
     population,
+    imd_average_score,
+    ruc21_settlement_class,
+    rurality,
     collection_type,
     household_collected,
     household_recycled,
