@@ -136,6 +136,12 @@ pop_cln <- pop_src %>%
   select(lad21cd = code,
          population = mid_2021)
 
+# > Population 2019 ============================================================
+pop19_cln <- pop19_src %>%
+  clean_names() %>% 
+  select(lad19cd = code,
+         population = all_ages)
+
 # > Deprivation ================================================================
 dep_cln <- dep_src |> 
   clean_names() |> 
@@ -154,11 +160,15 @@ dep_cln <- dep_src |>
     by = join_by(lad19cd)
   ) |> 
   # If nothing found in CHD lookup then lad21cd == lad19cd
-  mutate(
-    lad21cd = if_else(
-      is.na(lad21cd), lad19cd, lad21cd
+  mutate(lad21cd = coalesce(lad21cd, lad19cd)) |> 
+  # Add in 2019 population so we can compute weighted mean for groups
+  left_join(pop19_cln) |> 
+  # Aggregate to LAD 21 entities
+  group_by(lad21cd) |> 
+  summarise(
+    imd_average_score = weighted.mean(imd_average_score, w = population),
+    .groups = "drop"
     )
-  )
 
 # > Rural-Urban Classification =================================================
 ruc_cln <- ruc_src |> 

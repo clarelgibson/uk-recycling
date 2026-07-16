@@ -39,11 +39,18 @@ foi_src <- read_excel(
   sheet = " Dry data 202122"
 )
 
-# > Population =================================================================
+# > Population 2021 ============================================================
 pop_file <- "population-by-lad-2021.xls" 
 pop_src <- read_excel(
   paste0(folder, pop_file),
   range = "MYE4!A8:D428"
+)
+
+# > Population 2019 ============================================================
+pop19_file <- "population-by-lad-2019.xls"
+pop19_src <- read_excel(
+  paste0(folder, pop19_file),
+  range = "MYE2 - Persons!A5:D435"
 )
 
 # > Deprivation ================================================================

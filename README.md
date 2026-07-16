@@ -15,7 +15,7 @@ The headline finding is that collection system is associated with a real but mod
 ## Repository structure
 
 | Path | Description |
-|------------------------------------|------------------------------------|
+|----|----|
 | `recycling-systems-analysis.qmd` | The analysis document (source for the published page) |
 | `custom.scss` | Data Translator branding for the rendered document |
 | `R/theme_datatranslator.R` | Brand palette and ggplot theme, sourced by the analysis |
@@ -42,6 +42,7 @@ The cleaned dataset used by the analysis (`data/cln/data_recycling_system.csv`) 
 - [Local Authority District to Region (April 2021) Lookup in England](https://geoportal.statistics.gov.uk/datasets/94f38d2d8e7540bcafcfb86e08b18a1c_0/explore) (Save as `data/src/lad21-to-region21.csv`)
 - [Local Authority Districts (December 2021) Boundaries GB BFE](https://geoportal.statistics.gov.uk/datasets/505b177be82946b284c947cab91eeb31_0/explore?location=54.961226%2C-3.262782%2C5.91) (Save as `data/src/lad21-shapefile/`)
 - [Mid-2021 edition Estimates of the population for the UK, England, Wales, Scotland and Northern Ireland](https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/populationestimatesforukenglandandwalesscotlandandnorthernireland) (Save as `data/src/population-by-lad-2021.xls`)
+- [Mid-2019 edition Estimates of the population for the UK, England, Wales, Scotland and Norther Ireland](https://cy.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/populationestimatesforukenglandandwalesscotlandandnorthernireland/mid2019april2019localauthoritydistrictcodes/ukmidyearestimates20192019ladcodes.xls) (Save as `data/src/population-by-lad-2019.xls`)
 - [Local authority collected waste management - annual results](https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/1144270/LA_and_Regional_Spreadsheet_202122.xlsx) (Save as `data/src/recycling-by-lad-2021.xlsx`)
 - [Freedom of Information request for data on recycling systems by local authority for 2021](https://docs.google.com/spreadsheets/d/1M36p2m3Y59JvwW-a8sD-xXGADIkoe10N/edit?usp=share_link&ouid=110132729826719978887&rtpof=true&sd=true) (Save as `data/src/EIR2023_21546.xlsx`)
 - [English indices of deprivation 2019](https://www.gov.uk/government/statistics/english-indices-of-deprivation-2019) (Save as `data/src/deprivation-by-lad-2019.xlsx`)
