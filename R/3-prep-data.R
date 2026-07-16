@@ -36,6 +36,32 @@ lad_cln <- lad_src %>%
     )
   )
 
+# > CHD Lookup =================================================================
+chd_cln <- chd_src |> 
+  clean_names() |> 
+  # Keep only LAD changes from 2021
+  filter(
+    year == 2021,
+    entitycd %in% c("E06", "E07", "E08", "E09")
+  ) |> 
+  # Keep only necessary columns
+  select(
+    lad21cd = geogcd,
+    local_authority = geognm,
+    lad19cd = geogcd_p
+  )
+
+# Make tibble for changes that are missing from the CHD file
+chd_add <- tibble(
+  lad21cd = rep("E06000060", 4),
+  local_authority = rep("Buckinghamshire", 4),
+  lad19cd = c("E07000004", "E07000005", "E07000006", "E07000007")
+)
+
+# Join chd to additional
+chd_cln <- chd_cln |> 
+  bind_rows(chd_add)
+
 # > LAD Shapefile ==============================================================
 shp_cln <- shp_src %>% 
   clean_names() %>% 
@@ -43,6 +69,10 @@ shp_cln <- shp_src %>%
     lad21cd,
     bng_e:lat,
     geometry
+  ) |> 
+  # add area
+  mutate(
+    area_km2 = as.numeric(st_area(geometry) / 1000000)
   )
 
 # > Regions ====================================================================
@@ -105,3 +135,41 @@ pop_cln <- pop_src %>%
   clean_names() %>% 
   select(lad21cd = code,
          population = mid_2021)
+
+# > Deprivation ================================================================
+dep_cln <- dep_src |> 
+  clean_names() |> 
+  # Keep only necessary columns
+  select(
+    lad19cd = local_authority_district_code_2019,
+    imd_average_score
+  ) |> 
+  # Map lad21cd from CHD lookup
+  left_join(
+    select(
+      chd_cln,
+      lad19cd,
+      lad21cd
+    ),
+    by = join_by(lad19cd)
+  ) |> 
+  # If nothing found in CHD lookup then lad21cd == lad19cd
+  mutate(
+    lad21cd = if_else(
+      is.na(lad21cd), lad19cd, lad21cd
+    )
+  )
+
+# > Rural-Urban Classification =================================================
+ruc_cln <- ruc_src |> 
+  clean_names() |> 
+  # Keep only necessary columns
+  select(
+    lad21cd,
+    ruc21_settlement_class,
+    rurality = proportion_of_population_in_rural_o_as_percent
+  ) |> 
+  # Convert rurality to decimal percent
+  mutate(
+    rurality = rurality / 100
+  )

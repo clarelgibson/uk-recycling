@@ -44,6 +44,9 @@ The cleaned dataset used by the analysis (`data/cln/data_recycling_system.csv`) 
 - [Mid-2021 edition Estimates of the population for the UK, England, Wales, Scotland and Northern Ireland](https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/populationestimatesforukenglandandwalesscotlandandnorthernireland) (Save as `data/src/population-by-lad-2021.xls`)
 - [Local authority collected waste management - annual results](https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/1144270/LA_and_Regional_Spreadsheet_202122.xlsx) (Save as `data/src/recycling-by-lad-2021.xlsx`)
 - [Freedom of Information request for data on recycling systems by local authority for 2021](https://docs.google.com/spreadsheets/d/1M36p2m3Y59JvwW-a8sD-xXGADIkoe10N/edit?usp=share_link&ouid=110132729826719978887&rtpof=true&sd=true) (Save as `data/src/EIR2023_21546.xlsx`)
+- [English indices of deprivation 2019](https://www.gov.uk/government/statistics/english-indices-of-deprivation-2019) (Save as `data/src/deprivation-by-lad-2019.xlsx`)
+- [2021 rural-urban classification](https://www.ons.gov.uk/methodology/geography/geographicalproducts/ruralurbanclassifications/2021ruralurbanclassification) (save as `data/src/ruc-by-lad-2021.xlsx`)
+- [Code History Database (December 2021) for the UK - changes.csv](https://geoportal.statistics.gov.uk/datasets/adb8830e23294ecc82a727c6eea330ce/about) (save as `data/src/chd-2021-changes.csv`)
 
 The links above go to the original source location of the data. Should the links ever go stale, a copy of the same data can also be found on [Kaggle](https://www.kaggle.com/datasets/doublew/household-recycling-in-england-2021).
 

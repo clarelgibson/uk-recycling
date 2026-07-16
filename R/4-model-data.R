@@ -30,8 +30,10 @@ data <-
       in_foi = "N"
     )
   ) %>% 
+  # feature engineering
   mutate(
-    household_collected_per_cap = household_collected / population
+    household_collected_per_cap = household_collected / population,
+    population_density = population / area_km2
   )
 
 # RECYCLING SYSTEM ANALYSIS DATA ###############################################
@@ -44,5 +46,6 @@ data_recycling_system <-
     collection_type,
     household_collected,
     household_recycled,
-    household_recycle_rate
+    household_recycle_rate,
+    population_density
   )

@@ -7,12 +7,7 @@ library(here)
 library(dplyr)
 library(readr)
 library(readxl)
-library(googledrive)
-library(googlesheets4)
 library(sf)
-
-# > Scripts ====================================================================
-source(here("R/1-utils.R"))
 
 # > Params =====================================================================
 folder <- here("data/src/")
@@ -49,4 +44,25 @@ pop_file <- "population-by-lad-2021.xls"
 pop_src <- read_excel(
   paste0(folder, pop_file),
   range = "MYE4!A8:D428"
+)
+
+# > Deprivation ================================================================
+dep_file <- "deprivation-by-lad-2019.xlsx"
+dep_src <- read_excel(
+  paste0(folder, dep_file),
+  sheet = "IMD"
+)
+
+# > Code History Database (CHD) Lookup 2021 ====================================
+chd_file <- "chd-2021-changes.csv"
+chd_src <- read_csv(
+  paste0(folder, chd_file)
+)
+
+# > Rural-Urban Classification (RUC) ===========================================
+ruc_file <- "ruc-by-lad-2021.xlsx"
+ruc_src <- read_excel(
+  paste0(folder, ruc_file),
+  sheet = "Table 1D",
+  skip = 2
 )
