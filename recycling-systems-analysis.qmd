@@ -52,6 +52,8 @@ library(moments)
 library(rstatix)
 library(broom)
 library(showtext)
+library(factoextra)
+library(cluster)
 ```
 
 ``` {r source-code}
@@ -428,7 +430,7 @@ cluster_data |>
 
 ### Scale the features
 
-As expected, `population` and `population_density` show strong positive skew and should therefore be log-transformed. `imd_average_score` and `rurality` both shows a milder positive skew, `imd_average_score` is mild enough not to require transformation and `rurality` is bounded at zero, and so cannot be log-transformed.
+As expected, `population` and `population_density` show strong positive skew and should therefore be log-transformed. `imd_average_score` and `rurality` both show a milder positive skew, `imd_average_score` is mild enough not to require transformation and `rurality` is bounded at zero, and so cannot be log-transformed.
 
 ```{r feature-scaling}
 cluster_scaled <- cluster_data |>
@@ -452,14 +454,29 @@ As expected, `population_density` and `rurality` show a strong negative correlat
 ### Final feature set
 
 ```{r final-feature-set}
-#| eval: false
-#| include: false
-
-cluster_final <- cluster_scaled |> 
-  select(!population_density)
+cluster_final <- cluster_scaled[, c("population", "imd_average_score", "rurality")]
 
 head(cluster_final) |> kable()
 ```
+
+## Grow the tree and read off candidate *k*
+
+```{r dendrogram}
+# distance matrix on the final feature set
+cluster_dist <- dist(cluster_final, method = "euclidean")
+
+# Ward's hierarchical clustering
+cluster_hc <- hclust(cluster_dist, method = "ward.D2")
+
+# dendrogram
+fviz_dend(cluster_hc, show_labels = FALSE)
+```
+
+```{r silhouette}
+# silhouette width across candidate k
+fviz_nbclust(cluster_final, FUNcluster = hcut, method = "silhouette")
+```
+
 
 # Conclusion
 
