@@ -459,7 +459,11 @@ cluster_final <- cluster_scaled[, c("population", "imd_average_score", "rurality
 head(cluster_final) |> kable()
 ```
 
-## Grow the tree and read off candidate *k*
+## How many peer groups?
+
+We now need to decide how many clusters *k* to divide the data into. We will use a dendrogram and a silhouette plot to aid this decision but we must also keep in mind that with `r nrow(recycling)` authorities and three unevenly sized collection systems, fine-grained clusters risk leaving peer groups with zero or one authority of some system. Stratification only controls confounding if every stratum still holds a spread of systems to compare. So *k* is bounded from above by hese factors, and not just by dendrogram or silhouette results.
+
+### Dendrogram
 
 ```{r dendrogram}
 # distance matrix on the final feature set
@@ -472,9 +476,36 @@ cluster_hc <- hclust(cluster_dist, method = "ward.D2")
 fviz_dend(cluster_hc, show_labels = FALSE)
 ```
 
+In the dendrogram, at approximately height 5, *k* = 10. At approximately height 10, *k* = 5.
+
+### Silhouette
+
 ```{r silhouette}
 # silhouette width across candidate k
 fviz_nbclust(cluster_final, FUNcluster = hcut, method = "silhouette")
+```
+
+*k* = 2 is by far the most optimized number of clusters according to the silhouette, but that is a usual result. Silhouette rewards the cleanest split, but two groups of roughly 150 authorities each is barely a peer group. *k* = 3, 7, 9 are reasonably well supported by the silhouette.
+
+As mentioned earlier, neither plot is the decision on its own, because the binding constraint that the selected *k* has to leave every peer group with a workable spread of all three systems, and Multi-Stream is the rare category, which caps how fine we can go.
+
+Based on the constraint and the interpretation of the two charts, we will shortlist *k* = 5 and *k* = 3, and run a crosstab to make the final decision.
+
+### Crosstab
+
+```{r crosstab}
+recycling <- recycling |>
+  mutate(
+    peer_k3 = factor(cutree(cluster_hc, k = 3)[lad21cd]),
+    peer_k5 = factor(cutree(cluster_hc, k = 5)[lad21cd])
+  )
+
+# does every peer group retain all three systems?
+recycling |> count(peer_k5, collection_type) |>
+  pivot_wider(names_from = collection_type, values_from = n, values_fill = 0)
+
+recycling |> count(peer_k3, collection_type) |>
+  pivot_wider(names_from = collection_type, values_from = n, values_fill = 0)
 ```
 
 
