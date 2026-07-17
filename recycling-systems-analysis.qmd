@@ -383,6 +383,84 @@ There is one apparent discrepancy that we should explain. In the regression, Two
 
 Finally, the model explains very little. The R-squared is `r round(glance_2$r.squared, 3)`. This means that `r round((1 - glance_2$r.squared) * 100)`% of the variation in recycling rates between English local authorities lies outside collection system and population entirely.
 
+# Hierarchical clustering
+
+If collection system alone cannot fully explain the difference in recycling rates, there must be other factors at play. We can use a clustering technique to define strata of similar authorities, within which we can test the effect of the collection system on recycling rates.
+
+We can use hierarchical agglomerative clustering with Ward's D2 linkage on a set of standardised features, with *k*-means as a stability cross-check. This model is suitable because our *n* of `r nrow(recycling)` is small. The method is deterministic, so requires no seed to reproduce the results. Ward's minimises within-cluster variance, so it tends to give compact, reasonably balanced groups, which is what this stratification needs. Every peer group will be populated enough to compare systems inside it.
+
+The features we have pre-selected for this cluster analysis are:
+
+- `population`: the 2021 population estimate for the local authority
+- `population_density`: population per km^2
+- `rurality`: the proportion of the population living in rural areas
+- `imd_average_score`: the 2019 index of deprivation
+
+## Building peer groups
+
+The first step is to get a clean, comparably-scaled feature matrix and measure the correlation between them. Since  `population_density` and `rurality` both measure the urban-rural axis, they are likely to be strongly negatively correlated; if that is around -0.85 or stronger then we are double-weighting one dimension, and we should elect to drop one of the features.
+
+```{r build-peer-groups}
+# context features only; rate and system deliberately excluded
+cluster_data <- recycling |>
+  select(lad21cd, local_authority,
+         population, population_density, imd_average_score, rurality)
+```
+
+### Check for completeness
+
+``` {r peer-group-completeness}
+# distance methods cannot take NAs, so check completeness first
+cluster_data |>
+  summarise(across(everything(), ~ sum(is.na(.x))))
+```
+
+We have no missing data, so there is no need to drop any rows.
+
+### Check for skewness
+
+``` {r peer-group-distribution}
+# distribution shape of each feature
+cluster_data |>
+  summarise(across(c(population, population_density, imd_average_score, rurality),
+                   skewness))
+```
+
+### Scale the features
+
+As expected, `population` and `population_density` show strong positive skew and should therefore be log-transformed. `imd_average_score` and `rurality` both shows a milder positive skew, `imd_average_score` is mild enough not to require transformation and `rurality` is bounded at zero, and so cannot be log-transformed.
+
+```{r feature-scaling}
+cluster_scaled <- cluster_data |>
+  mutate(
+    population         = log10(population),
+    population_density = log10(population_density)
+    # imd_average_score and rurality stay on their original scale
+  ) |>
+  select(lad21cd, population, population_density, imd_average_score, rurality) |>
+  column_to_rownames("lad21cd") |>
+  scale()
+```
+
+### Correlation check
+
+```{r peer-group-correlation}
+cor(cluster_scaled) |> round(2)
+```
+As expected, `population_density` and `rurality` show a strong negative correlation. Since it is stronger than our pre-defined threshold of -0.85, we should consider that these features are near-duplicates and omit one of them. We will keep `rurality` as the more direct measure, and drop `population_density` from the feature set.
+
+### Final feature set
+
+```{r final-feature-set}
+#| eval: false
+#| include: false
+
+cluster_final <- cluster_scaled |> 
+  select(!population_density)
+
+head(cluster_final) |> kable()
+```
+
 # Conclusion
 
 **Does the collection system have a meaningful impact on recycling rates?**
