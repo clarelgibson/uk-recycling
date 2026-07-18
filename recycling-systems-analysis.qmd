@@ -624,6 +624,27 @@ mod_peer <- lm(household_recycle_rate ~ peer_label, data = recycling)
 anova(mod_peer, mod_3)   # what does adding collection_type buy over peer group alone?
 ```
 
+```{r}
+#| label: tbl-compare-models
+#| tbl-cap: "Compare the models"
+
+model_compare <- bind_rows(
+  "Unadjusted (mod_1)"    = tidy_1,
+  "Size-adjusted (mod_2)" = tidy_2,
+  "Peer-adjusted (mod_3)" = tidy_3,
+  .id = "model"
+) |>
+  filter(str_detect(term, "^collection_type")) |>
+  mutate(
+    term        = str_remove(term, "collection_type"),
+    estimate_pp = pp(estimate)
+  ) |>
+  select(term, model, estimate_pp) |>
+  pivot_wider(names_from = model, values_from = estimate_pp)
+
+model_compare |> kable(digits = 2)
+```
+
 
 # Conclusion
 
