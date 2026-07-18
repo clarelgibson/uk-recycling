@@ -577,7 +577,7 @@ peer_signature |> kable(digits = 2)
 In order to label the clusters, we look at the mean z-score of each feature.
 
 ```{r}
-#| label: peer-labels
+#| label: tbl-peer-labels
 #| tbl-cap: "Labelled clusters"
 
 peer_labels <- tribble(
@@ -598,6 +598,30 @@ recycling |>
   group_by(peer_label) |> 
   summarise(median(population), mean(imd_average_score), mean(rurality), n()) |> 
   kable(digits = 2)
+```
+
+## Comparing systems within peer groups
+
+We can now build a regression model to investigate the effect of collection system on recycling rate within the five peer groups.
+
+### The model
+
+Peer group goes in as a fixed factor, not a random effect. A mixed model wants many more than five groups to estimate a variance reliably, so with *k* = 5 we choose fixed blocking: four dummy coefficients that we treat as nuisance adjustment.
+
+```{r build-cluster-model}
+# peer group as a fixed blocking factor
+mod_3 <- lm(household_recycle_rate ~ collection_type + peer_label, data = recycling)
+
+tidy_3   <- tidy(mod_3, conf.int = TRUE)
+glance_3 <- glance(mod_3)
+```
+
+
+### Testing the system effect
+
+```{r anova-model}
+mod_peer <- lm(household_recycle_rate ~ peer_label, data = recycling)
+anova(mod_peer, mod_3)   # what does adding collection_type buy over peer group alone?
 ```
 
 
