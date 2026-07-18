@@ -502,10 +502,12 @@ recycling <- recycling |>
 
 # does every peer group retain all three systems?
 recycling |> count(peer_k5, collection_type) |>
-  pivot_wider(names_from = collection_type, values_from = n, values_fill = 0)
+  pivot_wider(names_from = collection_type, values_from = n, values_fill = 0) |> 
+  mutate(n = rowSums(across(where(is.numeric))), .before = `Co-Mingled`)
 
 recycling |> count(peer_k3, collection_type) |>
-  pivot_wider(names_from = collection_type, values_from = n, values_fill = 0)
+  pivot_wider(names_from = collection_type, values_from = n, values_fill = 0) |> 
+  mutate(n = rowSums(across(where(is.numeric))), .before = `Co-Mingled`)
 ```
 
 
