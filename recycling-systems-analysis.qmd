@@ -402,11 +402,16 @@ The features we have pre-selected for this cluster analysis are:
 
 The first step is to get a clean, comparably-scaled feature matrix and measure the correlation between them. Since  `population_density` and `rurality` both measure the urban-rural axis, they are likely to be strongly negatively correlated; if that is around -0.85 or stronger then we are double-weighting one dimension, and we should elect to drop one of the features.
 
-```{r build-peer-groups}
+```{r}
+#| label: tbl-build-peer-groups
+#| tbl-cap: "Pre-selected features for hierarchical clustering (first 5 rows only)"
+
 # context features only; rate and system deliberately excluded
 cluster_data <- recycling |>
   select(lad21cd, local_authority,
          population, population_density, imd_average_score, rurality)
+
+cluster_data |> head() |> kable(digits = 2)
 ```
 
 ### Check for completeness
@@ -432,7 +437,10 @@ cluster_data |>
 
 As expected, `population` and `population_density` show strong positive skew and should therefore be log-transformed. `imd_average_score` and `rurality` both show a milder positive skew, `imd_average_score` is mild enough not to require transformation and `rurality` is bounded at zero, and so cannot be log-transformed.
 
-```{r feature-scaling}
+```{r}
+#| label: tbl-feature-scaling
+#| tbl-cap: "Scaled features for hierarchical clustering (first 5 rows only)"
+
 cluster_scaled <- cluster_data |>
   mutate(
     population         = log10(population),
@@ -442,6 +450,8 @@ cluster_scaled <- cluster_data |>
   select(lad21cd, population, population_density, imd_average_score, rurality) |>
   column_to_rownames("lad21cd") |>
   scale()
+
+cluster_scaled |> head() |> kable(digits = 2)
 ```
 
 ### Correlation check
@@ -453,7 +463,10 @@ As expected, `population_density` and `rurality` show a strong negative correlat
 
 ### Final feature set
 
-```{r final-feature-set}
+```{r}
+#| label: tbl-final-feature-set
+#| tbl-cap: "Final feature set (first 5 rows only)"
+
 cluster_final <- cluster_scaled[, c("population", "imd_average_score", "rurality")]
 
 head(cluster_final) |> kable()
@@ -493,21 +506,69 @@ Based on the constraint and the interpretation of the two charts, we will shortl
 
 ### Crosstab
 
-```{r crosstab}
+```{r assign-clusters}
+# Assign local authorities into either 3 or 5 clusters using cutree
 recycling <- recycling |>
   mutate(
     peer_k3 = factor(cutree(cluster_hc, k = 3)[lad21cd]),
     peer_k5 = factor(cutree(cluster_hc, k = 5)[lad21cd])
   )
+```
+
+``` {r}
+#| label: tbl-crosstab-k5
+#| tbl-cap: "Peer group statistics for *k* = 5"
 
 # does every peer group retain all three systems?
 recycling |> count(peer_k5, collection_type) |>
   pivot_wider(names_from = collection_type, values_from = n, values_fill = 0) |> 
-  mutate(n = rowSums(across(where(is.numeric))), .before = `Co-Mingled`)
+  mutate(n = rowSums(across(where(is.numeric))), .before = `Co-Mingled`) |> 
+  kable()
+```
+
+``` {r}
+#| label: tbl-crosstab-k3
+#| tbl-cap: "Peer group statistics for *k* = 3"
 
 recycling |> count(peer_k3, collection_type) |>
   pivot_wider(names_from = collection_type, values_from = n, values_fill = 0) |> 
-  mutate(n = rowSums(across(where(is.numeric))), .before = `Co-Mingled`)
+  mutate(n = rowSums(across(where(is.numeric))), .before = `Co-Mingled`) |> 
+  kable()
+```
+
+The crosstab shows that both *k* = 3 and *k* = 5 produce clusters that contain all three collection systems.
+
+We will select *k* = 5 for further analysis, for the following reasons:
+
+- It produces finer stratification on the features we selected.
+- It produces more balanced totals.
+
+### Peer signature
+
+Let's review summary statistics for *k* = 5.
+
+```{r}
+#| label: tbl-signature-k5
+#| tbl-cap: "Peer signature for *k* = 5"
+
+peer_signature <- cluster_final |> 
+  as.tibble(rownames = "lad21cd") |> 
+  left_join(
+    select(
+      recycling,
+      lad21cd,
+      peer_k5
+    ),
+    by = "lad21cd"
+  ) |> 
+  group_by(peer_k5) |> 
+  summarise(
+    across(c(population, imd_average_score, rurality), mean),
+    n = n(),
+    .groups = "drop"
+  )
+
+peer_signature |> kable(digits = 2)
 ```
 
 
