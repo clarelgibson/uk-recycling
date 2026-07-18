@@ -437,6 +437,8 @@ cluster_data |>
 
 As expected, `population` and `population_density` show strong positive skew and should therefore be log-transformed. `imd_average_score` and `rurality` both show a milder positive skew, `imd_average_score` is mild enough not to require transformation and `rurality` is bounded at zero, and so cannot be log-transformed.
 
+Once the log transformations are complete, we can then scale all four features so that they are directly comparable. the `scale()` function in R converts each raw value into its *z-score*, which is the distance from the mean measured in standard deviations.
+
 ```{r}
 #| label: tbl-feature-scaling
 #| tbl-cap: "Scaled features for hierarchical clustering (first 5 rows only)"
@@ -569,6 +571,33 @@ peer_signature <- cluster_final |>
   )
 
 peer_signature |> kable(digits = 2)
+```
+
+
+In order to label the clusters, we look at the mean z-score of each feature.
+
+```{r}
+#| label: peer-labels
+#| tbl-cap: "Labelled clusters"
+
+peer_labels <- tribble(
+  ~peer_k5, ~peer_label,
+  "1", "Urban, deprived",
+  "2", "Rural, small",
+  "3", "Urban, large, high deprivation",
+  "4", "Urban, large, low deprivation",
+  "5", "Semi-Rural, low deprivation"
+)
+
+# Add the labels to recycling data
+recycling <- recycling |>
+  mutate(peer_k5 = as.character(peer_k5)) |>
+  left_join(peer_labels, by = "peer_k5")
+
+recycling |> 
+  group_by(peer_label) |> 
+  summarise(median(population), mean(imd_average_score), mean(rurality), n()) |> 
+  kable(digits = 2)
 ```
 
 
