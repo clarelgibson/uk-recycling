@@ -389,7 +389,7 @@ Finally, the model explains very little. The R-squared is `r round(glance_2$r.sq
 
 If collection system alone cannot fully explain the difference in recycling rates, there must be other factors at play. We can use a clustering technique to define strata of similar authorities, within which we can test the effect of the collection system on recycling rates.
 
-We can use hierarchical agglomerative clustering with Ward's D2 linkage on a set of standardised features, with *k*-means as a stability cross-check. This model is suitable because our *n* of `r nrow(recycling)` is small. The method is deterministic, so requires no seed to reproduce the results. Ward's minimises within-cluster variance, so it tends to give compact, reasonably balanced groups, which is what this stratification needs. Every peer group will be populated enough to compare systems inside it.
+We can use hierarchical agglomerative clustering with Ward's D2 linkage on a set of standardised features. This model is suitable because our *n* of `r nrow(recycling)` is small. The method is deterministic, so requires no seed to reproduce the results. Ward's minimises within-cluster variance, so it tends to give compact, reasonably balanced groups, which is what this stratification needs. Every peer group will be populated enough to compare systems inside it.
 
 The features we have pre-selected for this cluster analysis are:
 
@@ -476,7 +476,7 @@ head(cluster_final) |> kable()
 
 ## How many peer groups?
 
-We now need to decide how many clusters *k* to divide the data into. We will use a dendrogram and a silhouette plot to aid this decision but we must also keep in mind that with `r nrow(recycling)` authorities and three unevenly sized collection systems, fine-grained clusters risk leaving peer groups with zero or one authority of some system. Stratification only controls confounding if every stratum still holds a spread of systems to compare. So *k* is bounded from above by hese factors, and not just by dendrogram or silhouette results.
+We now need to decide how many clusters *k* to divide the data into. We will use a dendrogram and a silhouette plot to aid this decision but we must also keep in mind that with `r nrow(recycling)` authorities and three unevenly sized collection systems, fine-grained clusters risk leaving peer groups with zero or one authority of some system. Stratification only controls confounding if every stratum still holds a spread of systems to compare. So *k* is bounded from above by these factors, and not just by dendrogram or silhouette results.
 
 ### Dendrogram
 
@@ -554,7 +554,7 @@ Let's review summary statistics for *k* = 5.
 #| tbl-cap: "Peer signature for *k* = 5"
 
 peer_signature <- cluster_final |> 
-  as.tibble(rownames = "lad21cd") |> 
+  as_tibble(rownames = "lad21cd") |> 
   left_join(
     select(
       recycling,
@@ -643,6 +643,29 @@ model_compare <- bind_rows(
   pivot_wider(names_from = model, values_from = estimate_pp)
 
 model_compare |> kable(digits = 2)
+```
+
+One note of nuance, which the per-group view in @fig-peer-rate-panel makes visible. The uplift from separated collection is directionally consistent across most peer groups but not identical in every one. In the semi-rural, low-deprivation group, which already records the highest rates, the three systems sit almost level, whereas in the larger, more deprived urban groups the gap between co-mingled and separated collection is at its widest. We have not formally tested this interaction, because the Multi-Stream counts within some peer groups are too small to support it, so the model reports an average effect. The fair interpretation is that separated collection carries a modest advantage that holds across comparable authorities, rather than a fixed gain of the same size everywhere.
+
+```{r}
+#| label: fig-peer-rate-panel
+#| fig-cap: "Recycling rate by collection system, within each peer group. Navy diamond marks the group mean."
+
+recycling |>
+  mutate(peer_label = fct_reorder(peer_label, household_recycle_rate, .desc = TRUE)) |>
+  ggplot(aes(x = collection_type, y = household_recycle_rate,
+             colour = collection_type)) +
+  geom_jitter(width = 0.15, height = 0, alpha = 0.5, size = 1.5) +
+  stat_summary(fun = mean, geom = "point", shape = 18, size = 3,
+               colour = dt_navy) +
+  facet_wrap(~ peer_label) +
+  coord_flip() +
+  scale_colour_dt(guide = "none") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = NULL, y = NULL) +
+  theme_dt() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor   = element_blank())
 ```
 
 
