@@ -24,27 +24,10 @@ execute:
   message: false
 ---
 
-# Introduction
+```{r}
+#| label: load-packages
+#| include: false
 
-This paper sets out to answer the question: **Does the collection system have a meaningful impact on recycling rate?**
-
-Local authorities in England can elect to use one of three collection systems for household recycling:
-
-- **Co-Mingled:** all non-organic recyclable material is put into a single bin by the householder
-- **Two Stream:** non-organic recyclable material must be sorted into two bins by the householder (e.g. one bin for glass and metal, and a second bin for paper, card and plastic)
-- **Multi-Stream:** householders sort their non-organic recyclable material into separate bins for each type of material
-
-Multi-Stream systems place a higher burden on the householder, so this paper asks whether that higher burden is associated with higher recycling rates, and whether any difference is large enough to matter in practice.
-
-The word "meaningful" in the research question is important. A difference in recycling rates can be statistically detectable without being practically meaningful. This analysis therefore reports not only whether the systems differ, but by how much, and with how much confidence.
-
-A note on causation: local authorities choose their own collection systems. Therefore, this is observational data and not a randomised experiment. Throughout this paper the language is deliberately one of association rather than cause.
-
-In this analysis, we set the threshold for statistical significance at *p* < 0.05.
-
-# Setup
-## Load required packages
-```{r load-packages}
 library(here)
 library(tidyverse)
 library(knitr)
@@ -56,37 +39,26 @@ library(factoextra)
 library(cluster)
 ```
 
-``` {r source-code}
+```{r}
+#| label: source-code
+#| include: false
+
 source(here("R/theme_datatranslator.R"))
 ```
 
-``` {r set-typography}
+```{r}
+#| label: set-typography
+#| include: false
+
 font_add_google("Work Sans", "Work Sans")
 font_add_google("Roboto Mono", "Roboto Mono")
 showtext_auto()
 showtext_opts(dpi = 96)
 ```
 
-## Import the recycling data
-
-```{r import-data}
-recycling <- 
-  read_csv(here("data/cln/data_recycling_system.csv")) |> 
-  # reorder factor levels to assist with plotting
-  mutate(
-    collection_type = fct_reorder(collection_type, household_recycle_rate)
-  )
-
-head(recycling) |> kable()
-```
-
-The dataset includes information about household recycling for `r nrow(recycling)` local authorities in England in 2021. It contains the unique code and name of each authority, the population of the authority in 2021, the type of collection system in place in 2021, the amount of household waste collected and recycled in 2021 (in tonnes) and the household recycling rate.
-
-## Helper code
-
-The chunk below contains code to support consistent plotting.
-
-```{r plotting-summarising-code}
+```{r}
+#| label: plotting-summarising-code
+#| include: false
 
 # We'll be creating a number of similar plots, so we can wrap the code into a function
 plot_distribution <- function(data, yvar, title, scale = c("none", "percent", "thousands")) {
@@ -134,9 +106,10 @@ summarise_distribution <- function(data, yvar) {
 }
 ```
 
-The chunk below contains code to support reporting of results.
+```{r}
+#| label: reporting-helpers
+#| include: false
 
-```{r reporting-helpers}
 # Convert a proportion to percentage points
 pp <- function(x, digits = 1) round(x * 100, digits)
 
@@ -149,6 +122,41 @@ get_term <- function(tbl, term_name, col = "estimate") {
   tbl[[col]][tbl$term == term_name]
 }
 ```
+
+# Introduction
+
+Local authorities in England can elect to use one of three collection systems for household recycling:
+
+- **Co-Mingled:** all non-organic recyclable material is put into a single bin by the householder
+- **Two Stream:** non-organic recyclable material must be sorted into two bins by the householder (e.g. one bin for glass and metal, and a second bin for paper, card and plastic)
+- **Multi-Stream:** householders sort their non-organic recyclable material into separate bins for each type of material
+
+The more streams of waste there are, the higher the burden on the householder, so this paper asks whether that higher burden is associated with higher recycling rates, and whether any difference is large enough to matter in practice.
+
+The analysis proceeds in three stages. First, we ask whether recycling rates differ across the three systems at all. Second, we ask whether any difference survives adjustment for authority size. Third, and most stringently, we use hierarchical clustering to build peer groups of authorities that are alike in size, deprivation and rural character, and compare systems only within those groups. Each stage applies a stricter control than the last, so a difference that survives all three is unlikely to be an artefact of the kind of authority that chooses each system.
+
+## Study design
+
+In this study, recycling rate is defined as the percentage of household waste recycled and composted relative to total household waste collected at the kerbside. The percentage includes both dry recyclables (plastic, glass, metal, paper and card) and organic materials (food and garden waste).
+
+A note on causation: local authorities choose their own collection systems. Therefore, this is observational data and not a randomised experiment. Throughout this paper the language is deliberately one of association rather than cause. In this analysis, we set the threshold for statistical significance at *p* < 0.05.
+
+## Data collection
+
+We gathered local authority recycling rates for the 2021-22 collection year. We requested policy data on the collection system in place at the time through a Freedom of Information request to the Department for Environment, Food and Rural Affairs (DEFRA). Further data on population, deprivation and urban-rural classification was gathered from the Office for National Statistics (ONS).
+
+```{r import-data}
+recycling <- 
+  read_csv(here("data/cln/data_recycling_system.csv")) |> 
+  # reorder factor levels to assist with plotting
+  mutate(
+    collection_type = fct_reorder(collection_type, household_recycle_rate)
+  )
+
+head(recycling) |> kable()
+```
+
+The dataset includes information about household recycling for `r nrow(recycling)` local authorities in England in 2021-22. It contains the unique code and name of each authority, the population of the authority, the type of collection system in place, the amount of household waste collected and recycled (in tonnes) and the household recycling rate.
 
 # Visualise the distributions
 Before we run a significance test, let's view both the number of local authorities employing each type of collection system (see @fig-collection-systems), and the distributions of recycling rates by collection type (see @fig-recycle-rate).
@@ -201,55 +209,11 @@ plot_distribution(
 summarise_distribution(recycling, household_recycle_rate) |> kable(digits = 3)
 ```
 
-As shown in @tbl-recycle-rate, we can see that Multi-Stream collection systems achieved the highest mean and median recycling rate in 2021, and Co-Mingled systems achieved the lowest rates. The skew number tells us that the distributions are not normal. Co-Mingled systems show a positive skew, while Two Stream and Multi-Stream both show a negative skew.
+As shown in @tbl-recycle-rate, we can see that Multi-Stream collection systems achieved the highest mean and median recycling rate in 2021-22, and Co-Mingled systems achieved the lowest rates. The skew number tells us that the distributions are not normal. Co-Mingled systems show a positive skew, while Two Stream and Multi-Stream both show a negative skew.
 
-## Why we analyse rate rather than volume
+# Do recycling rates differ significantly across the three systems?
 
-The raw volumes of household waste recycled by local authority are heavily right-skewed, as shown in the plots below. They are dominated by local authority size, since a large council collects and recycles more of everything. This is why the analysis works on the rate of recycling, which normalises for size. It is also why we will use `log(population)` when we come to control for size in the regression.
-
-```{r}
-#| label: fig-household-collected
-#| fig-cap: "Distribution of household waste collected by collection system. Values are in thousands of tonnes. The box shows the median and interquartile range; the diamond shows the mean."
-
-plot_distribution(
-  recycling,
-  household_collected,
-  title = "Distribution of household waste collected by collection system",
-  scale = "thousands"
-)
-```
-
-```{r}
-#| label: tbl-household-collected
-#| tbl-cap: "Summary statistics for amount of household waste collected (tonnes) by collection system"
-
-summarise_distribution(recycling, household_collected) |> kable(digits = 3)
-```
-
-```{r}
-#| label: fig-household-recycled
-#| fig-cap: "Distribution of household waste recycled by collection system. Values are in thousands of tonnes. The box shows the median and interquartile range; the diamond shows the mean."
-
-plot_distribution(
-  recycling,
-  household_recycled,
-  title = "Distribution of household waste recycled by collection system",
-  scale = "thousands"
-)
-```
-
-```{r}
-#| label: tbl-household-recycled
-#| tbl-cap: "Summary statistics for amount of waste recycled (in tonnes) by collection system"
-
-summarise_distribution(recycling, household_recycled) |> kable(digits = 3)
-```
-
-# Test for significance
-
-## Kruskal-Wallis test
-
-The default statistical test would be a one-way ANOVA, which compares group means. But ANOVA assumes each group is roughly normally distributed with similar variance, and our groups are uneven (`r n_sys("Co-Mingled")` / `r n_sys("Two Stream")` / `r n_sys("Multi-Stream")`) and somewhat skewed, as shown above. Instead, we will use the Kruskal-Wallis test: the non-parametric equivalent. It works on the ranks of the values instead of the raw values, so it makes no assumption about the shape of the distribution, and it handles unequal group sizes comfortably. It tests whether at least one group tends to sit higher than the others.
+The default statistical test would be a one-way ANOVA, which compares group means. But ANOVA assumes each group is roughly normally distributed with similar variance, and our groups are uneven (`r n_sys("Co-Mingled")` / `r n_sys("Two Stream")` / `r n_sys("Multi-Stream")`) and somewhat skewed, as shown above. Instead, we will use the Kruskal-Wallis test: the non-parametric equivalent. It works on the ranks of the values instead of the raw values, so it makes no assumption about the shape of the distribution, and it handles unequal group sizes well. It tests whether at least one group tends to sit higher than the others.
 
 ```{r kruskal-wallis-test}
 # Run the KW test for recycling rate as explained by collection type
@@ -257,13 +221,13 @@ kw <- kruskal.test(household_recycle_rate ~ collection_type, data = recycling)
 kw
 ```
 
-The test returns H = `r round(kw$statistic, 2)` on `r kw$parameter` degrees of freedom, *p* = `r round(kw$p.value, 3)`. At least one collection system therefore differs from the others to a statistically significant degree.
+The test returns a statistically significant difference in recycling rates across the three systems, H = `r round(kw$statistic, 2)` on `r kw$parameter` degrees of freedom, *p* = `r round(kw$p.value, 3)`. Based on these results, the type of collection system used has a significant effect on recycling performance.
 
 This tells us that a difference exists somewhere, but not where, and not how large. Both of those questions matter more than the first.
 
-## Effect size
+## How big is the difference?
 
-However, a *p*-value only tells us whether there is an effect, not how big it is. With `r nrow(recycling)` authorities, even a trivial difference can come out significant. Our question asks about a meaningful impact, so we need an effect size, which measures how much of the variation in recycling rates is explained by collection system.
+A *p*-value only tells us whether there is an effect, not how big it is. With `r nrow(recycling)` authorities, even a trivial difference can come out significant. Our question asks about a meaningful impact, so we need an effect size, which measures how much of the variation in recycling rates is explained by collection system.
 
 ```{r}
 #| label: tbl-kw-effect
@@ -274,11 +238,11 @@ eff <- recycling |> kruskal_effsize(household_recycle_rate ~ collection_type)
 eff |> kable(digits = 3)
 ```
 
-Eta-squared is `r round(eff$effsize, 3)`, meaning collection system accounts for `r round(eff$effsize * 100, 1)`% of the variation in recycling rates between local authorities. By the conventional thresholds (0.01 small, 0.06 medium, 0.14 large) this is a small effect. This means that the collection system is not the biggest contributor to the recycling rate.
+Eta-squared is `r round(eff$effsize, 3)`, meaning collection system accounts for `r round(eff$effsize * 100, 1)`% of the variation in recycling rates between local authorities. By the conventional thresholds (< 0.06 small, < 0.14 medium, >= 0.14 large) this is a small effect. This means that the collection system is not the biggest contributor to the recycling rate.
 
-## Dunn's test
+## Which system(s) are different?
 
-Finally, we can run Dunn's test to test the collection systems in a pairwise manner, which allows us to see whether any one of them show a significant difference in recycling rate compared to the others.
+Finally, we can run Dunn's test to test the collection systems in a pairwise manner, which allows us to see whether any one of them shows a significant difference in recycling rate compared to the others.
 
 ```{r}
 #| label: tbl-dunns-test
@@ -319,7 +283,7 @@ The Two Stream versus Multi-Stream comparison is different. It is not significan
 
 Taken together, the pattern is consistent with the burden of separation mattering mainly at the first step, going from mixing everything into one bin to separation into two bins, with little further gain from separating into more streams. The data support this interpretation but do not establish it. With only `r n_sys("Multi-Stream")` Multi-Stream authorities, this analysis has limited power to detect modest differences.
 
-# Controlling for authority size
+# Does the difference survive adjustment for authority size?
 
 Significance testing has now been taken about as far as it can usefully go. Every result has been interpreted as either significant or not significant, with one landing almost exactly on the threshold. We now have two further questions to answer.
 
@@ -385,7 +349,7 @@ There is one apparent discrepancy that we should explain. In the regression, Two
 
 Finally, the model explains very little. The R-squared is `r round(glance_2$r.squared, 3)`. This means that `r round((1 - glance_2$r.squared) * 100)`% of the variation in recycling rates between English local authorities lies outside collection system and population entirely.
 
-# Hierarchical clustering
+# Does the difference still exist when comparing groups of similar authorities?
 
 If collection system alone cannot fully explain the difference in recycling rates, there must be other factors at play. We can use a clustering technique to define strata of similar authorities, within which we can test the effect of the collection system on recycling rates.
 
@@ -432,12 +396,11 @@ cluster_data |>
   summarise(across(c(population, population_density, imd_average_score, rurality),
                    skewness))
 ```
+As expected, `population` and `population_density` show strong positive skew and should therefore be log-transformed. `imd_average_score` and `rurality` both show a milder positive skew, `imd_average_score` is mild enough not to require transformation and `rurality` is bounded at zero, and so cannot be log-transformed.
 
 ### Scale the features
 
-As expected, `population` and `population_density` show strong positive skew and should therefore be log-transformed. `imd_average_score` and `rurality` both show a milder positive skew, `imd_average_score` is mild enough not to require transformation and `rurality` is bounded at zero, and so cannot be log-transformed.
-
-Once the log transformations are complete, we can then scale all four features so that they are directly comparable. the `scale()` function in R converts each raw value into its *z-score*, which is the distance from the mean measured in standard deviations.
+With the log transformations complete, we can scale all four features so that they are directly comparable. The `scale()` function in R converts each raw value into its *z-score*, which is the distance from the mean measured in standard deviations.
 
 ```{r}
 #| label: tbl-feature-scaling
@@ -616,7 +579,6 @@ tidy_3   <- tidy(mod_3, conf.int = TRUE)
 glance_3 <- glance(mod_3)
 ```
 
-
 ### Testing the system effect
 
 ```{r anova-model}
@@ -667,7 +629,6 @@ recycling |>
   theme(panel.grid.major.y = element_blank(),
         panel.grid.minor   = element_blank())
 ```
-
 
 # Conclusion
 
